@@ -1,0 +1,426 @@
+const { v4: uuidv4 } = require("uuid");
+const Session = require("../models/Session");
+const { uploadImage, uploadImageFromUrl } = require("../services/cloudinaryService");
+const { generateFaceSwap, isMockMode } = require("../services/aiService");
+const { generateQRCode } = require("../utils/qrCodeGenerator");
+const { getTemplatesByGender, getTemplateById } = require("../utils/stylePrompts");
+
+/**
+ * Create a new photobooth session
+ * POST /api/sessions
+ * Body: { userName: string }
+ */
+const createSession = async (req, res) => {
+  try {
+    const { userName } = req.body;
+
+    if (!userName || !userName.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: "userName is required",
+      });
+    }
+
+    const sessionId = uuidv4();
+
+    const session = new Session({
+      sessionId,
+      userName: userName.trim(),
+      status: "started",
+    });
+
+    await session.save();
+
+    console.log(`[Session] Created new session: ${sessionId} for user: ${userName}`);
+
+    return res.status(201).json({
+      success: true,
+      sessionId: session.sessionId,
+      userName: session.userName,
+      status: session.status,
+    });
+  } catch (error) {
+    console.error("[Session] Error creating session:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to create session",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Update session with gender selection
+ * PATCH /api/sessions/:sessionId/gender
+ * Body: { gender: "male" | "female" }
+ */
+const updateGender = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { gender } = req.body;
+
+    if (!gender || !["male", "female"].includes(gender)) {
+      return res.status(400).json({
+        success: false,
+        error: 'gender must be "male" or "female"',
+      });
+    }
+
+    const session = await Session.findOne({ sessionId });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    session.gender = gender;
+    session.status = "gender_selected";
+
+    // Clear previous template selection when gender changes
+    session.selectedTemplate = { id: null, name: null, imageUrl: null };
+
+    await session.save();
+
+    console.log(`[Session] ${sessionId} - Gender set to: ${gender}`);
+
+    return res.json({
+      success: true,
+      sessionId: session.sessionId,
+      gender: session.gender,
+      status: session.status,
+    });
+  } catch (error) {
+    console.error("[Session] Error updating gender:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to update gender",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Update session with selected template
+ * PATCH /api/sessions/:sessionId/template
+ * Body: { templateId: string }
+ */
+const updateTemplate = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { templateId } = req.body;
+
+    if (!templateId) {
+      return res.status(400).json({
+        success: false,
+        error: "templateId is required",
+      });
+    }
+
+    const session = await Session.findOne({ sessionId });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    if (!session.gender) {
+      return res.status(400).json({
+        success: false,
+        error: "Gender must be selected before choosing a template",
+      });
+    }
+
+    const template = getTemplateById(templateId);
+
+    if (!template) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid template ID",
+      });
+    }
+
+    // Ensure template matches selected gender
+    if (template.gender !== session.gender) {
+      return res.status(400).json({
+        success: false,
+        error: `Template "${template.name}" is not available for gender "${session.gender}"`,
+      });
+    }
+
+    session.selectedTemplate = {
+      id: template.id,
+      name: template.name,
+      imageUrl: template.previewImage,
+    };
+    session.status = "template_selected";
+
+    await session.save();
+
+    console.log(`[Session] ${sessionId} - Template set to: ${template.name}`);
+
+    return res.json({
+      success: true,
+      sessionId: session.sessionId,
+      selectedTemplate: session.selectedTemplate,
+      status: session.status,
+    });
+  } catch (error) {
+    console.error("[Session] Error updating template:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to update template",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Capture user image and trigger AI generation
+ * POST /api/sessions/:sessionId/capture
+ * Body: { image: string (base64) }
+ */
+const captureImage = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const { image } = req.body;
+
+    if (!image) {
+      return res.status(400).json({
+        success: false,
+        error: "image (base64 string) is required",
+      });
+    }
+
+    const session = await Session.findOne({ sessionId });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    if (!session.selectedTemplate || !session.selectedTemplate.id) {
+      return res.status(400).json({
+        success: false,
+        error: "A template must be selected before capturing an image",
+      });
+    }
+
+    // Step 1: Upload the raw webcam image to Cloudinary
+    console.log(`[Session] ${sessionId} - Uploading captured image to Cloudinary...`);
+    session.status = "captured";
+    await session.save();
+
+    let rawImageUrl;
+    try {
+      rawImageUrl = await uploadImage(image);
+    } catch (uploadError) {
+      // If Cloudinary upload fails (e.g., no credentials), use a placeholder in mock mode
+      if (isMockMode()) {
+        console.warn("[Session] Cloudinary upload failed in mock mode, using data URI as fallback");
+        rawImageUrl = image.startsWith("data:") ? image : `data:image/png;base64,${image}`;
+      } else {
+        throw uploadError;
+      }
+    }
+
+    session.rawUserImageUrl = rawImageUrl;
+    session.status = "generating";
+    await session.save();
+
+    console.log(`[Session] ${sessionId} - Image uploaded: ${rawImageUrl.substring(0, 80)}...`);
+
+    // Step 2: Respond immediately - generation happens in the background
+    res.json({
+      success: true,
+      sessionId: session.sessionId,
+      rawImageUrl: session.rawUserImageUrl,
+      status: session.status,
+      message: "Image captured. AI generation started in background.",
+    });
+
+    // Step 3: Trigger AI face-swap generation in the background
+    const template = getTemplateById(session.selectedTemplate.id);
+    const prompt = template ? template.prompt : "";
+    const targetTemplateUrl = session.selectedTemplate.imageUrl || "";
+
+    console.log(`[Session] ${sessionId} - Starting AI generation...`);
+
+    try {
+      const generatedUrl = await generateFaceSwap(
+        rawImageUrl,
+        targetTemplateUrl,
+        prompt
+      );
+
+      // If the generated URL is different from source and not a data URI, upload to Cloudinary
+      let finalUrl = generatedUrl;
+      if (
+        generatedUrl !== rawImageUrl &&
+        generatedUrl.startsWith("http") &&
+        !isMockMode()
+      ) {
+        try {
+          finalUrl = await uploadImageFromUrl(generatedUrl);
+        } catch (cloudinaryError) {
+          console.warn("[Session] Could not re-upload generated image to Cloudinary:", cloudinaryError.message);
+          finalUrl = generatedUrl;
+        }
+      }
+
+      session.generatedImageUrl = finalUrl;
+      session.status = "completed";
+      await session.save();
+
+      console.log(`[Session] ${sessionId} - AI generation completed: ${finalUrl.substring(0, 80)}...`);
+    } catch (aiError) {
+      console.error(`[Session] ${sessionId} - AI generation failed:`, aiError.message);
+      session.status = "failed";
+      await session.save();
+    }
+  } catch (error) {
+    console.error("[Session] Error capturing image:", error.message);
+
+    // Only send error response if headers haven't been sent yet
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        error: "Failed to capture image",
+        details: error.message,
+      });
+    }
+  }
+};
+
+/**
+ * Get session status and generated image URL
+ * GET /api/sessions/:sessionId/status
+ */
+const getStatus = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await Session.findOne({ sessionId });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    return res.json({
+      success: true,
+      sessionId: session.sessionId,
+      userName: session.userName,
+      gender: session.gender,
+      selectedTemplate: session.selectedTemplate,
+      rawUserImageUrl: session.rawUserImageUrl,
+      generatedImageUrl: session.generatedImageUrl,
+      status: session.status,
+      createdAt: session.createdAt,
+    });
+  } catch (error) {
+    console.error("[Session] Error getting status:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get session status",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Generate QR code for the generated image URL
+ * GET /api/sessions/:sessionId/qr
+ */
+const generateQR = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+
+    const session = await Session.findOne({ sessionId });
+
+    if (!session) {
+      return res.status(404).json({
+        success: false,
+        error: "Session not found",
+      });
+    }
+
+    if (!session.generatedImageUrl) {
+      return res.status(400).json({
+        success: false,
+        error: "No generated image available yet. Please wait for AI generation to complete.",
+        status: session.status,
+      });
+    }
+
+    const qrCodeDataUrl = await generateQRCode(session.generatedImageUrl);
+
+    console.log(`[Session] ${sessionId} - QR code generated for image URL`);
+
+    return res.json({
+      success: true,
+      sessionId: session.sessionId,
+      qrCode: qrCodeDataUrl,
+      imageUrl: session.generatedImageUrl,
+    });
+  } catch (error) {
+    console.error("[Session] Error generating QR code:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to generate QR code",
+      details: error.message,
+    });
+  }
+};
+
+/**
+ * Get available templates filtered by gender
+ * GET /api/templates/:gender
+ */
+const getTemplates = async (req, res) => {
+  try {
+    const { gender } = req.params;
+
+    if (!["male", "female"].includes(gender)) {
+      return res.status(400).json({
+        success: false,
+        error: 'gender must be "male" or "female"',
+      });
+    }
+
+    const templates = getTemplatesByGender(gender);
+
+    console.log(`[Templates] Returning ${templates.length} templates for gender: ${gender}`);
+
+    return res.json({
+      success: true,
+      gender,
+      count: templates.length,
+      templates,
+    });
+  } catch (error) {
+    console.error("[Templates] Error getting templates:", error.message);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to get templates",
+      details: error.message,
+    });
+  }
+};
+
+module.exports = {
+  createSession,
+  updateGender,
+  updateTemplate,
+  captureImage,
+  getStatus,
+  generateQR,
+  getTemplates,
+};

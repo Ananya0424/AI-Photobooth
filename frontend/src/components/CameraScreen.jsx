@@ -1,151 +1,195 @@
-﻿import { useRef, useState } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import Webcam from 'react-webcam';
 
-export default function CameraScreen({ onCapture, onBack }) {
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const [isCameraActive, setIsCameraActive] = useState(false);
-  const [captureMode, setCaptureMode] = useState('camera');
+const videoConstraints = {
+  width: 720,
+  height: 720,
+  facingMode: 'user',
+};
 
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: false,
-      });
-      videoRef.current.srcObject = stream;
-      setIsCameraActive(true);
-    } catch (error) {
-      alert('Camera access denied. Please allow camera access.');
-      console.error('Camera error:', error);
+function CameraScreen({ onCapture, onBack, userName }) {
+  const webcamRef = useRef(null);
+  const [countdown, setCountdown] = useState(null);
+  const [showFlash, setShowFlash] = useState(false);
+  const [isCameraReady, setIsCameraReady] = useState(false);
+  const [cameraError, setCameraError] = useState('');
+  const [hasPermission, setHasPermission] = useState(true);
+
+  const handleUserMedia = useCallback(() => {
+    setIsCameraReady(true);
+    setHasPermission(true);
+    setCameraError('');
+  }, []);
+
+  const handleUserMediaError = useCallback((err) => {
+    console.error('Camera error:', err);
+    setHasPermission(false);
+    setCameraError(
+      'Camera access denied. Please allow camera permissions and reload the page.'
+    );
+  }, []);
+
+  const capturePhoto = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        // Show flash
+        setShowFlash(true);
+        setTimeout(() => setShowFlash(false), 400);
+
+        // Send to parent
+        setTimeout(() => {
+          onCapture(imageSrc);
+        }, 300);
+      }
     }
-  };
+  }, [onCapture]);
 
-  const capturePhoto = () => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const context = canvas.getContext('2d');
+  const startCountdown = useCallback(() => {
+    if (countdown !== null) return;
+    setCountdown(3);
+  }, [countdown]);
 
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    context.drawImage(video, 0, 0);
-
-    canvas.toBlob((blob) => {
-      onCapture(blob);
-    }, 'image/jpeg', 0.95);
-  };
-
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      onCapture(file);
+  useEffect(() => {
+    if (countdown === null) return;
+    if (countdown === 0) {
+      capturePhoto();
+      setCountdown(null);
+      return;
     }
-  };
-
-  const stopCamera = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
-      setIsCameraActive(false);
-    }
-  };
+    const timer = setTimeout(() => {
+      setCountdown((prev) => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [countdown, capturePhoto]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-2xl mb-8">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 screen-enter relative">
+      {/* Flash effect */}
+      {showFlash && <div className="camera-flash" />}
+
+      {/* Back button */}
+      <div className="fixed top-6 left-6 z-20">
         <button
           onClick={onBack}
-          className="text-white text-lg hover:bg-white hover:bg-opacity-20 px-4 py-2 rounded-lg transition"
+          disabled={countdown !== null}
+          className="glass px-4 py-2.5 rounded-xl text-sm font-medium text-text-secondary hover:text-text-primary transition-all duration-300 card-hover flex items-center gap-2 disabled:opacity-50"
         >
-          ← Back
+          <span>←</span>
+          <span>Back</span>
         </button>
       </div>
 
-      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden">
-        <div className="flex bg-gray-100">
-          <button
-            onClick={() => {
-              setCaptureMode('camera');
-              startCamera();
-            }}
-            className="flex-1 py-3 font-semibold transition"
-          >
-            📷 Camera
-          </button>
-          <button
-            onClick={() => {
-              setCaptureMode('upload');
-              stopCamera();
-            }}
-            className="flex-1 py-3 font-semibold transition"
-          >
-            🖼️ Upload
-          </button>
+      <div className="w-full max-w-lg">
+        {/* Header */}
+        <div className="text-center mb-6 animate-fade-in">
+          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-2">
+            <span className="gradient-text">Strike a Pose!</span>
+          </h2>
+          <p className="text-text-secondary text-sm">
+            {userName}, look at the camera and click capture when ready
+          </p>
         </div>
 
-        {captureMode === 'camera' && (
-          <div className="p-6 bg-black">
-            {!isCameraActive ? (
-              <div className="h-96 flex flex-col items-center justify-center text-white">
-                <div className="text-6xl mb-4">📷</div>
-                <p className="text-lg mb-6">Click below to start camera</p>
-                <button
-                  onClick={startCamera}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-8 rounded-lg text-lg transition"
-                >
-                  Start Camera
-                </button>
-              </div>
+        {/* Camera container */}
+        <div className="relative mx-auto mb-8 animate-scale-in">
+          {/* Glow border */}
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-primary via-secondary to-accent opacity-40 blur-sm animate-pulse-glow" />
+
+          <div className="relative rounded-2xl overflow-hidden bg-card border border-border-glow">
+            {hasPermission ? (
+              <Webcam
+                ref={webcamRef}
+                audio={false}
+                screenshotFormat="image/jpeg"
+                screenshotQuality={0.92}
+                videoConstraints={videoConstraints}
+                mirrored={true}
+                onUserMedia={handleUserMedia}
+                onUserMediaError={handleUserMediaError}
+                className="w-full aspect-square object-cover block"
+              />
             ) : (
-              <div>
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-96 rounded-lg object-cover bg-black"
-                />
-                <div className="flex gap-4 mt-6">
-                  <button
-                    onClick={capturePhoto}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-lg text-lg transition"
-                  >
-                    ✓ Capture Photo
-                  </button>
-                  <button
-                    onClick={stopCamera}
-                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded-lg text-lg transition"
-                  >
-                    ✕ Close Camera
-                  </button>
+              <div className="w-full aspect-square flex items-center justify-center bg-card">
+                <div className="text-center p-8">
+                  <div className="text-5xl mb-4">📷</div>
+                  <p className="text-text-secondary text-sm mb-2">Camera access required</p>
+                  <p className="text-text-muted text-xs">{cameraError}</p>
                 </div>
               </div>
             )}
-          </div>
-        )}
 
-        {captureMode === 'upload' && (
-          <div className="p-6">
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-4 border-dashed border-purple-300 rounded-2xl p-8 text-center cursor-pointer hover:border-purple-600 hover:bg-purple-50 transition"
-            >
-              <div className="text-5xl mb-4">📁</div>
-              <p className="text-lg font-semibold text-gray-700 mb-2">
-                Click to upload or drag and drop
-              </p>
-              <p className="text-gray-500">PNG, JPG, GIF up to 10MB</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
+            {/* Camera loading overlay */}
+            {!isCameraReady && hasPermission && (
+              <div className="absolute inset-0 glass-strong flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-4xl mb-3 animate-bounce-soft">📸</div>
+                  <p className="text-text-secondary text-sm shimmer-text">Starting camera...</p>
+                </div>
+              </div>
+            )}
+
+            {/* Countdown overlay */}
+            {countdown !== null && countdown > 0 && (
+              <div className="absolute inset-0 bg-base/60 backdrop-blur-sm flex items-center justify-center z-10">
+                <div
+                  key={countdown}
+                  className="animate-countdown"
+                >
+                  <span className="text-8xl md:text-9xl font-black font-heading text-white drop-shadow-[0_0_30px_rgba(99,102,241,0.8)]">
+                    {countdown}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Corner guides */}
+            <div className="absolute inset-4 pointer-events-none">
+              {/* Top-left */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-white/30 rounded-tl-lg" />
+              {/* Top-right */}
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-white/30 rounded-tr-lg" />
+              {/* Bottom-left */}
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-white/30 rounded-bl-lg" />
+              {/* Bottom-right */}
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-white/30 rounded-br-lg" />
             </div>
           </div>
-        )}
-      </div>
+        </div>
 
-      <canvas ref={canvasRef} className="hidden" />
+        {/* Capture button */}
+        <div className="flex justify-center animate-slide-up" style={{ animationDelay: '0.3s' }}>
+          <button
+            onClick={startCountdown}
+            disabled={!isCameraReady || countdown !== null || !hasPermission}
+            className={`group relative w-20 h-20 rounded-full transition-all duration-300 ${
+              isCameraReady && countdown === null && hasPermission
+                ? 'cursor-pointer hover:scale-105'
+                : 'opacity-50 cursor-not-allowed'
+            }`}
+          >
+            {/* Outer ring - pulsing */}
+            <div className="absolute inset-0 rounded-full border-4 border-white/30 animate-pulse-glow" />
+
+            {/* Middle ring */}
+            <div className="absolute inset-2 rounded-full border-2 border-white/50 transition-all duration-300 group-hover:border-white/80" />
+
+            {/* Inner circle */}
+            <div className="absolute inset-4 rounded-full gradient-primary transition-all duration-300 group-hover:scale-110 shadow-lg shadow-primary/40 group-hover:shadow-xl group-hover:shadow-primary/60 flex items-center justify-center">
+              <span className="text-white text-xl">📸</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Hint text */}
+        <p className="text-text-muted text-xs text-center mt-4">
+          {countdown !== null
+            ? 'Get ready...'
+            : 'Click the button to start a 3-second countdown'}
+        </p>
+      </div>
     </div>
   );
 }
+
+export default CameraScreen;
