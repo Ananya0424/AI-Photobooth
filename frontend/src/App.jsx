@@ -64,7 +64,7 @@ function App() {
         const res = await fetch(`${API_BASE}/sessions/${sessionId}/template`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ template: template.id }),
+          body: JSON.stringify({ templateId: template.id }),
         });
         if (!res.ok) throw new Error('Failed to set template');
       }

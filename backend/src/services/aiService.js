@@ -66,7 +66,13 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt) => {
     const sourceResponse = await fetch(sourceImageUrl);
     const sourceBlob = await sourceResponse.blob();
 
-    const targetResponse = await fetch(targetTemplateUrl);
+    // Ensure target URL is absolute for Node.js fetch
+    let absoluteTargetUrl = targetTemplateUrl;
+    if (targetTemplateUrl.startsWith("/")) {
+      absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
+    }
+
+    const targetResponse = await fetch(absoluteTargetUrl);
     const targetBlob = await targetResponse.blob();
 
     console.log("[AI Service] Sending images to face-swap API...");

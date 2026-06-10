@@ -38,23 +38,23 @@ const styleTemplates = {
       "A woman wearing a stunning red and gold silk saree with intricate zari border and traditional jewelry, standing gracefully in front of a grand ancient Indian temple with carved stone pillars, warm natural lighting, photorealistic, 8k quality",
     previewImage: "/assets/templates/saree.jpg",
   },
-  lehenga: {
-    id: "lehenga",
-    name: "Lehenga",
-    backgroundName: "Royal Palace Background",
+  salwar_suit: {
+    id: "salwar_suit",
+    name: "Salwar Suit",
+    backgroundName: "Garden Background",
     gender: "female",
     prompt:
-      "A woman wearing a magnificent royal blue and gold bridal lehenga with heavy embroidery and dupatta, adorned with traditional Indian jewelry, standing in a luxurious royal palace with marble floors and golden arches, cinematic lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/lehenga.jpg",
+      "A beautiful woman wearing an elegant traditional Indian salwar suit with intricate embroidery and a graceful dupatta, standing in a lush palace garden with blooming flowers, warm golden hour lighting, photorealistic, 8k quality",
+    previewImage: "/assets/templates/salwar_suit.jpg",
   },
-  business_suit: {
-    id: "business_suit",
-    name: "Business Suit",
-    backgroundName: "Corporate Background",
+  formal_women: {
+    id: "formal_women",
+    name: "Formal Pants & Shirt",
+    backgroundName: "Modern Office",
     gender: "female",
     prompt:
-      "A professional woman wearing a sharp tailored navy business suit with a white blouse, standing confidently in a sleek modern corporate boardroom with panoramic city views, professional studio lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/business_suit.jpg",
+      "A professional woman wearing sharp tailored formal business pants and a crisp white button-up shirt, standing confidently in a sleek modern corporate office with panoramic city views, professional studio lighting, photorealistic, 8k quality",
+    previewImage: "/assets/templates/formal_women.jpg",
   },
 };
 

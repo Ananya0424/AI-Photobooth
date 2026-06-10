@@ -89,7 +89,7 @@ function WelcomeScreen({ onSubmit }) {
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
                 placeholder=" "
-                className="w-full px-5 py-4 bg-surface rounded-xl border border-border-subtle text-text-primary text-lg transition-all duration-300 peer focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-surface-light"
+                className="w-full px-5 pt-6 pb-2 bg-surface rounded-xl border border-border-subtle text-text-primary text-lg transition-all duration-300 peer focus:border-primary focus:ring-2 focus:ring-primary/20 focus:bg-surface-light"
                 maxLength={30}
                 autoComplete="off"
               />
