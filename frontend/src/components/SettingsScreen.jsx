@@ -25,7 +25,7 @@ export default function SettingsScreen({ onBack, apiBase }) {
         if (!res.ok) throw new Error('Failed to fetch settings');
         const data = await res.json();
         setAvailableModels(data.availableModels || []);
-        setSelectedModel(data.selectedModel || '');
+        setSelectedModel(data.settings?.selectedModel || '');
       } catch (err) {
         console.error('Failed to load settings:', err);
         setErrorMsg('Failed to load settings. Please try again.');
@@ -240,7 +240,7 @@ export default function SettingsScreen({ onBack, apiBase }) {
                         <option value="" disabled>No models available</option>
                       )}
                       {availableModels.map((model) => (
-                        <option key={model} value={model}>{model}</option>
+                        <option key={model.id} value={model.id}>{model.name}</option>
                       ))}
                     </select>
                     {/* Custom dropdown arrow */}
