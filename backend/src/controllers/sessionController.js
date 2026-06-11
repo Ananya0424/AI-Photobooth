@@ -5,6 +5,7 @@ const { uploadImage, uploadImageFromUrl } = require("../services/cloudinaryServi
 const { generateFaceSwap, isMockMode } = require("../services/aiService");
 const { generateQRCode } = require("../utils/qrCodeGenerator");
 const { getTemplatesByGender, getTemplateById } = require("../utils/stylePrompts");
+const { enhancePrompt } = require("../services/openaiService");
 
 /**
  * Create a new photobooth session
@@ -256,7 +257,15 @@ const captureImage = async (req, res) => {
     const modelSetting = await AppSettings.findOne({ key: "selectedModel" });
     const selectedModel = modelSetting ? modelSetting.value : "gpt-4o";
     session.selectedModel = selectedModel;
-    session.generatedPrompt = prompt;
+
+    // Enhance prompt using the selected OpenAI model (if API key is present)
+    let finalPrompt = prompt;
+    try {
+      finalPrompt = await enhancePrompt(selectedModel, prompt, session.userName, session.gender);
+    } catch (err) {
+      console.error("[Session] Failed to enhance prompt, using base:", err.message);
+    }
+    session.generatedPrompt = finalPrompt;
 
     console.log(`[Session] ${sessionId} - Starting AI generation with model: ${selectedModel}...`);
 
@@ -266,7 +275,7 @@ const captureImage = async (req, res) => {
       const generatedUrl = await generateFaceSwap(
         rawImageUrl,
         targetTemplateUrl,
-        prompt
+        finalPrompt
       );
 
       // If the generated URL is different from source and not a data URI, upload to Cloudinary
