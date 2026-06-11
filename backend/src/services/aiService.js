@@ -61,19 +61,25 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt) => {
         const sourceResponse = await fetch(sourceImageUrl);
         const sourceBlob = await sourceResponse.blob();
 
-        // Ensure target URL is absolute for Node.js fetch
-        let absoluteTargetUrl = targetTemplateUrl;
+        // Load target template from local filesystem if it's a local path
+        let targetBlob;
         if (targetTemplateUrl.startsWith("/")) {
+          const fs = require("fs");
+          const path = require("path");
+          let filePath;
           if (process.env.NODE_ENV === "production") {
-            const port = process.env.PORT || 5000;
-            absoluteTargetUrl = `http://localhost:${port}${targetTemplateUrl}`;
+            filePath = path.join(__dirname, "../../../frontend/dist", targetTemplateUrl);
           } else {
-            absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
+            filePath = path.join(__dirname, "../../../frontend/public", targetTemplateUrl);
           }
+          console.log(`[AI Service] Loading template from disk: ${filePath}`);
+          const fileBuffer = fs.readFileSync(filePath);
+          targetBlob = new Blob([fileBuffer], { type: "image/jpeg" });
+        } else {
+          console.log(`[AI Service] Fetching remote template URL: ${targetTemplateUrl}`);
+          const targetResponse = await fetch(targetTemplateUrl);
+          targetBlob = await targetResponse.blob();
         }
-
-        const targetResponse = await fetch(absoluteTargetUrl);
-        const targetBlob = await targetResponse.blob();
 
         console.log("[AI Service] Sending images to face-swap API...");
 
