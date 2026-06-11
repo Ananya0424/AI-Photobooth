@@ -49,11 +49,11 @@ const styleTemplates = {
   },
   formal_women: {
     id: "formal_women",
-    name: "Formal Pants & Shirt",
-    backgroundName: "Modern Office",
+    name: "Formal Suit & Glasses",
+    backgroundName: "Modern Corporate Corridor",
     gender: "female",
     prompt:
-      "A professional woman wearing sharp tailored formal business pants and a crisp white button-up shirt, standing confidently in a sleek modern corporate office with panoramic city views, professional studio lighting, photorealistic, 8k quality",
+      "A professional woman wearing glasses, a tailored black blazer suit, and a white button-up shirt, holding folders and notebooks, standing in front of a modern corporate glass building corridor, corporate professional look, photorealistic, 8k quality",
     previewImage: "/assets/templates/formal_women.jpg",
   },
 };
