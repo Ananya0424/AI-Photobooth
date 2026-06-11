@@ -64,7 +64,12 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt) => {
         // Ensure target URL is absolute for Node.js fetch
         let absoluteTargetUrl = targetTemplateUrl;
         if (targetTemplateUrl.startsWith("/")) {
-          absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
+          if (process.env.NODE_ENV === "production") {
+            const port = process.env.PORT || 5000;
+            absoluteTargetUrl = `http://localhost:${port}${targetTemplateUrl}`;
+          } else {
+            absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
+          }
         }
 
         const targetResponse = await fetch(absoluteTargetUrl);
