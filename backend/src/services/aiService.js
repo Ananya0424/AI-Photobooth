@@ -49,41 +49,52 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt) => {
   // ===== REAL MODE - Hugging Face Space via @gradio/client =====
   console.log("[AI Service] Running in REAL MODE with Hugging Face API");
 
+  const AI_TIMEOUT_MS = 60000; // 60 second timeout
+
   try {
-    const { Client } = await import("@gradio/client");
+    // Wrap the entire AI call in a timeout
+    const result = await Promise.race([
+      (async () => {
+        const { Client } = await import("@gradio/client");
 
-    const hfToken = process.env.HUGGING_FACE_API_TOKEN;
+        const hfToken = process.env.HUGGING_FACE_API_TOKEN;
 
-    // Connect to a face-swap Gradio Space on Hugging Face
-    // Using a popular face-swap space - can be changed to any compatible space
-    const client = await Client.connect("felixrosberg/face-swap", {
-      hf_token: hfToken,
-    });
+        // Connect to a face-swap Gradio Space on Hugging Face
+        console.log("[AI Service] Connecting to Hugging Face Space...");
+        const client = await Client.connect("felixrosberg/face-swap", {
+          hf_token: hfToken,
+        });
 
-    console.log("[AI Service] Connected to Hugging Face Space");
+        console.log("[AI Service] Connected to Hugging Face Space");
 
-    // Fetch the source and target images as blobs
-    const sourceResponse = await fetch(sourceImageUrl);
-    const sourceBlob = await sourceResponse.blob();
+        // Fetch the source and target images as blobs
+        const sourceResponse = await fetch(sourceImageUrl);
+        const sourceBlob = await sourceResponse.blob();
 
-    // Ensure target URL is absolute for Node.js fetch
-    let absoluteTargetUrl = targetTemplateUrl;
-    if (targetTemplateUrl.startsWith("/")) {
-      absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
-    }
+        // Ensure target URL is absolute for Node.js fetch
+        let absoluteTargetUrl = targetTemplateUrl;
+        if (targetTemplateUrl.startsWith("/")) {
+          absoluteTargetUrl = `http://localhost:5173${targetTemplateUrl}`;
+        }
 
-    const targetResponse = await fetch(absoluteTargetUrl);
-    const targetBlob = await targetResponse.blob();
+        const targetResponse = await fetch(absoluteTargetUrl);
+        const targetBlob = await targetResponse.blob();
 
-    console.log("[AI Service] Sending images to face-swap API...");
+        console.log("[AI Service] Sending images to face-swap API...");
 
-    // Call the face-swap prediction endpoint
-    const result = await client.predict("/run_inference", {
-      source_img: sourceBlob,
-      target_img: targetBlob,
-    });
+        // Call the face-swap prediction endpoint
+        const predictionResult = await client.predict("/run_inference", {
+          source_img: sourceBlob,
+          target_img: targetBlob,
+        });
 
-    console.log("[AI Service] Face-swap API response received");
+        console.log("[AI Service] Face-swap API response received");
+        return predictionResult;
+      })(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("AI generation timed out after 60 seconds")), AI_TIMEOUT_MS)
+      ),
+    ]);
 
     // Extract the result image URL
     if (result && result.data && result.data[0]) {

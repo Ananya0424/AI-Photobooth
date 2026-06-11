@@ -5,234 +5,328 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
   const [qrData, setQrData] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   const imageToShow = generatedImageUrl || capturedImage;
 
-  // Confetti particles
-  const confettiPieces = useMemo(() => {
-    return Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      delay: `${Math.random() * 2}s`,
-      duration: `${1.5 + Math.random() * 2}s`,
-      color: ['#6366f1', '#8b5cf6', '#ec4899', '#f472b6', '#818cf8', '#fbbf24', '#34d399'][i % 7],
-      size: 4 + Math.random() * 8,
-      rotation: Math.random() * 360,
-    }));
-  }, []);
+  const sparkles = useMemo(() => Array.from({ length: 14 }, (_, i) => ({
+    id: i, left: `${Math.random() * 100}%`, top: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 4}s`, duration: `${2 + Math.random() * 3}s`,
+    size: `${2 + Math.random() * 4}px`,
+  })), []);
 
-  // Hide confetti after animation
+  const confettiPieces = useMemo(() => Array.from({ length: 40 }, (_, i) => ({
+    id: i, left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 1.2}s`, duration: `${1.8 + Math.random() * 1.5}s`,
+    color: ['#6366f1','#8b5cf6','#ec4899','#f472b6','#818cf8','#fbbf24','#34d399','#f87171'][i % 8],
+    size: 5 + Math.random() * 8, rotation: Math.random() * 360,
+    shape: i % 3,
+  })), []);
+
   useEffect(() => {
-    const timer = setTimeout(() => setShowConfetti(false), 4000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setShowConfetti(false), 4500);
+    return () => clearTimeout(t);
   }, []);
 
   const handleDownload = useCallback(() => {
     if (!imageToShow) return;
-    const link = document.createElement('a');
-    link.href = imageToShow;
-    link.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const a = document.createElement('a');
+    a.href = imageToShow;
+    a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }, [imageToShow, userName]);
 
   const handleShowQR = useCallback(async () => {
-    setShowQRModal(true);
-    setQrLoading(true);
-    try {
-      const data = await onGetQR();
-      if (data) {
-        setQrData(data);
-      }
-    } catch (err) {
-      console.error('QR error:', err);
-    } finally {
-      setQrLoading(false);
-    }
+    setShowQRModal(true); setQrLoading(true);
+    try { const d = await onGetQR(); if (d) setQrData(d); }
+    catch (e) { console.error(e); }
+    finally { setQrLoading(false); }
   }, [onGetQR]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 screen-enter relative overflow-hidden">
-      {/* Confetti */}
-      {showConfetti && (
-        <div className="fixed inset-0 pointer-events-none z-50">
-          {confettiPieces.map((piece) => (
-            <div
-              key={piece.id}
-              className="absolute top-0"
-              style={{
-                left: piece.left,
-                animationDelay: piece.delay,
-                animation: `confetti ${piece.duration} ease-out forwards`,
-                width: `${piece.size}px`,
-                height: `${piece.size * 1.4}px`,
-                background: piece.color,
-                borderRadius: piece.id % 2 === 0 ? '50%' : '2px',
-                transform: `rotate(${piece.rotation}deg)`,
-              }}
-            />
+    <>
+      <style>{`
+        @keyframes sparkle { 0%,100%{opacity:0;transform:scale(0) translateY(0)}50%{opacity:1}100%{opacity:0;transform:scale(1) translateY(-80px)} }
+        @keyframes confetti { 0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+        @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)} }
+        @keyframes scale-in { 0%{opacity:0;transform:scale(0.93)}100%{opacity:1;transform:scale(1)} }
+        @keyframes fade-in { 0%{opacity:0}100%{opacity:1} }
+        @keyframes slide-up { 0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)} }
+        @keyframes spin-slow { from{transform:rotate(0deg)}to{transform:rotate(360deg)} }
+        @keyframes glow-pulse { 0%,100%{opacity:0.5}50%{opacity:0.8} }
+        .rs-sparkle { position:absolute;border-radius:50%;pointer-events:none;animation:sparkle 4s ease-out infinite; }
+        .rs-sparkle-wrap { position:absolute;width:100%;height:100%;pointer-events:none; }
+        .rs-float { animation:float 3s ease-in-out infinite; }
+        .rs-glass {
+          background:rgba(255,255,255,0.05);
+          backdrop-filter:blur(20px);
+          -webkit-backdrop-filter:blur(20px);
+          border:1px solid rgba(255,255,255,0.1);
+        }
+        .rs-spin { animation:spin-slow 1.5s linear infinite; }
+        .rs-glow { animation:glow-pulse 2.5s ease-in-out infinite; }
+        .rs-btn-dl:hover { box-shadow:0 20px 40px rgba(168,85,247,0.5);transform:translateY(-3px) scale(1.02); }
+        .rs-btn-dl:active { transform:scale(0.97); }
+        .rs-btn-sec:hover { background:rgba(255,255,255,0.1);transform:translateY(-2px); }
+        .rs-btn-sec:active { transform:scale(0.97); }
+        .rs-back:hover { color:#e2e8f0; }
+      `}</style>
+
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1.5rem 1rem',
+        background: 'linear-gradient(to bottom right, #0f172a, #2d1b4e, #0f172a)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* Confetti */}
+        {showConfetti && (
+          <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 50, overflow: 'hidden' }}>
+            {confettiPieces.map((p) => (
+              <div key={p.id} style={{
+                position: 'absolute', top: '-20px', left: p.left,
+                width: `${p.size}px`, height: p.shape === 0 ? `${p.size}px` : `${p.size * 1.5}px`,
+                background: p.color,
+                borderRadius: p.shape === 0 ? '50%' : p.shape === 1 ? '2px' : '1px 4px',
+                transform: `rotate(${p.rotation}deg)`,
+                animation: `confetti ${p.duration} ease-out ${p.delay} forwards`,
+              }} />
+            ))}
+          </div>
+        )}
+
+        {/* Sparkles */}
+        <div className="rs-sparkle-wrap">
+          {sparkles.map((s) => (
+            <div key={s.id} className="rs-sparkle" style={{
+              left: s.left, top: s.top, animationDelay: s.delay, animationDuration: s.duration,
+              width: s.size, height: s.size,
+              background: s.id % 3 === 0 ? '#6366f1' : s.id % 3 === 1 ? '#8b5cf6' : '#ec4899',
+            }} />
           ))}
         </div>
-      )}
 
-      <div className="w-full max-w-xl relative z-10">
-        {/* Header */}
-        <div className="text-center mb-8 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold font-heading mb-2">
-            <span className="gradient-text">Your AI Portrait</span>
-          </h2>
-          <p className="text-text-secondary text-sm">
-            Looking amazing, {userName}! 🎉
+        {/* Floating decorations */}
+        {[
+          { e: '🎉', top: '70px', left: '35px', delay: '0s', opacity: 0.2 },
+          { e: '✨', top: '110px', right: '50px', delay: '1s', opacity: 0.18 },
+          { e: '🌟', bottom: '100px', right: '40px', delay: '0.5s', opacity: 0.2 },
+          { e: '🎊', bottom: '130px', left: '55px', delay: '1.5s', opacity: 0.15 },
+        ].map((d, i) => (
+          <div key={i} className="rs-float" style={{
+            position: 'absolute', fontSize: '40px', opacity: d.opacity, userSelect: 'none',
+            pointerEvents: 'none', animationDelay: d.delay,
+            top: d.top, left: d.left, right: d.right, bottom: d.bottom,
+          }}>{d.e}</div>
+        ))}
+
+        <div style={{ width: '100%', maxWidth: '480px', position: 'relative', zIndex: 10 }}>
+          {/* Header */}
+          <div style={{ textAlign: 'center', marginBottom: '24px', animation: 'fade-in 0.6s ease-out' }}>
+            {/* Success badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              background: 'rgba(52,211,153,0.1)', border: '1px solid rgba(52,211,153,0.25)',
+              borderRadius: '20px', padding: '6px 16px', marginBottom: '16px',
+              color: '#34d399', fontSize: '13px', fontWeight: '600',
+            }}>
+              <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399' }} />
+              AI Portrait Ready!
+            </div>
+
+            <h2 style={{
+              fontSize: '36px', fontWeight: '900', marginBottom: '8px',
+              background: 'linear-gradient(to right, #a78bfa, #f472b6, #c084fc)',
+              WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+            }}>Your AI Portrait</h2>
+            <p style={{ color: '#94a3b8', fontSize: '15px' }}>
+              You look incredible, <span style={{ color: '#f1f5f9', fontWeight: '600' }}>{userName}</span>! 🎉
+            </p>
+          </div>
+
+          {/* Image card */}
+          <div style={{ position: 'relative', marginBottom: '24px', animation: 'scale-in 0.7s ease-out' }}>
+            {/* Animated glow */}
+            <div className="rs-glow" style={{
+              position: 'absolute', inset: '-3px', borderRadius: '22px',
+              background: 'linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899, #6366f1)',
+              backgroundSize: '300% 300%',
+              filter: 'blur(4px)',
+            }} />
+
+            <div className="rs-glass" style={{ position: 'relative', borderRadius: '20px', padding: '10px', boxShadow: '0 30px 60px rgba(0,0,0,0.5)' }}>
+              {imageToShow ? (
+                <>
+                  {!imageLoaded && (
+                    <div style={{ width: '100%', aspectRatio: '1', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg className="rs-spin" style={{ width: '36px', height: '36px', color: '#a78bfa' }} viewBox="0 0 24 24">
+                        <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
+                        <path style={{ opacity: 0.85 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    </div>
+                  )}
+                  <img
+                    src={imageToShow}
+                    alt="Your AI Portrait"
+                    onLoad={() => setImageLoaded(true)}
+                    style={{
+                      width: '100%', borderRadius: '14px', objectFit: 'contain',
+                      maxHeight: '500px', display: imageLoaded ? 'block' : 'none',
+                    }}
+                  />
+                </>
+              ) : (
+                <div style={{ width: '100%', aspectRatio: '1', borderRadius: '14px', background: 'rgba(255,255,255,0.03)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '12px' }}>🖼️</div>
+                    <p style={{ color: '#64748b', fontSize: '14px' }}>Image unavailable</p>
+                  </div>
+                </div>
+              )}
+
+              {/* AI badge */}
+              {imageLoaded && (
+                <div style={{
+                  position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)',
+                  background: 'rgba(15,23,42,0.75)', backdropFilter: 'blur(12px)',
+                  borderRadius: '20px', padding: '6px 16px', border: '1px solid rgba(255,255,255,0.12)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                  animation: 'fade-in 0.5s ease-out',
+                }}>
+                  <span style={{ fontSize: '12px' }}>✨</span>
+                  <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '500', whiteSpace: 'nowrap' }}>AI Generated</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: '12px', marginBottom: '20px', animation: 'slide-up 0.6s ease-out 0.3s both' }}>
+            {/* Regenerate */}
+            <button onClick={onRetake} className="rs-btn-sec" style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px', padding: '16px 10px', cursor: 'pointer',
+              transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: '8px',
+            }}>
+              <div style={{ fontSize: '26px', lineHeight: 1 }}>🔄</div>
+              <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>Regenerate</span>
+            </button>
+
+            {/* Download — Primary */}
+            <button onClick={handleDownload} className="rs-btn-dl" style={{
+              background: 'linear-gradient(135deg, #a855f7, #ec4899)', border: 'none',
+              borderRadius: '16px', padding: '18px 10px', cursor: 'pointer',
+              transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: '8px',
+              boxShadow: '0 12px 30px rgba(168,85,247,0.35)',
+            }}>
+              <div style={{ fontSize: '28px', lineHeight: 1 }}>⬇️</div>
+              <span style={{ color: '#fff', fontSize: '13px', fontWeight: '700' }}>Download</span>
+            </button>
+
+            {/* QR Code */}
+            <button onClick={handleShowQR} className="rs-btn-sec" style={{
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '16px', padding: '16px 10px', cursor: 'pointer',
+              transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: '8px',
+            }}>
+              <div style={{ fontSize: '26px', lineHeight: 1 }}>📱</div>
+              <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>QR Code</span>
+            </button>
+          </div>
+
+          {/* Back to home */}
+          <div style={{ textAlign: 'center', animation: 'fade-in 0.6s ease-out 0.5s both' }}>
+            <button onClick={onRestart} className="rs-back" style={{
+              background: 'none', border: 'none', color: '#475569', fontSize: '14px',
+              cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '8px 16px', borderRadius: '10px', transition: 'all 0.2s ease',
+            }}>
+              ← Start over
+            </button>
+          </div>
+
+          <p style={{ color: '#334155', fontSize: '12px', textAlign: 'center', marginTop: '12px' }}>
+            ✦ Powered by AI • Premium Experience ✦
           </p>
         </div>
 
-        {/* Image card */}
-        <div className="relative mb-8 animate-scale-in">
-          {/* Glow */}
-          <div className="absolute -inset-2 rounded-3xl bg-gradient-to-r from-primary via-secondary to-accent opacity-20 blur-lg animate-pulse-glow" />
-
-          <div className="relative glass-strong rounded-2xl p-3 shadow-2xl shadow-primary/10">
-            {imageToShow ? (
-              <img
-                src={imageToShow}
-                alt="Your AI Portrait"
-                className="w-full rounded-xl object-contain max-h-[500px]"
-              />
-            ) : (
-              <div className="w-full aspect-square rounded-xl bg-card flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-5xl mb-3">🖼️</div>
-                  <p className="text-text-muted text-sm">Image unavailable</p>
-                </div>
-              </div>
-            )}
-
-            {/* Premium frame label */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2">
-              <div className="glass px-4 py-1.5 rounded-full">
-                <span className="text-xs text-text-secondary font-medium">✨ AI Generated</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          {/* Retake */}
-          <button
-            onClick={onRetake}
-            className="glass card-hover px-5 py-4 rounded-xl text-center transition-all duration-300 group"
-          >
-            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-300">🔄</div>
-            <span className="text-sm font-medium text-text-primary">Generate Again</span>
-          </button>
-
-          {/* Download */}
-          <button
-            onClick={handleDownload}
-            className="gradient-primary btn-glow px-5 py-4 rounded-xl text-center text-white transition-all duration-300 shadow-lg shadow-primary/25 group"
-          >
-            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-300">⬇️</div>
-            <span className="text-sm font-semibold">Download</span>
-          </button>
-
-          {/* QR Code */}
-          <button
-            onClick={handleShowQR}
-            className="glass card-hover px-5 py-4 rounded-xl text-center transition-all duration-300 group"
-          >
-            <div className="text-2xl mb-1.5 group-hover:scale-110 transition-transform duration-300">📱</div>
-            <span className="text-sm font-medium text-text-primary">Get QR Code</span>
-          </button>
-        </div>
-
-        {/* Back to home */}
-        <div className="text-center animate-fade-in" style={{ animationDelay: '0.5s' }}>
-          <button
-            onClick={onRestart}
-            className="text-text-secondary hover:text-text-primary transition-colors text-sm font-medium inline-flex items-center gap-2 group"
-          >
-            <span className="group-hover:-translate-x-1 transition-transform duration-300">←</span>
-            Back to Home
-          </button>
-        </div>
-      </div>
-
-      {/* QR Code Modal */}
-      {showQRModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-base/80 backdrop-blur-md animate-fade-in"
-            onClick={() => setShowQRModal(false)}
-          />
-
-          {/* Modal */}
-          <div className="relative glass-strong rounded-3xl p-8 md:p-10 max-w-sm w-full shadow-2xl shadow-primary/20 animate-scale-in">
-            {/* Close button */}
-            <button
+        {/* QR Modal */}
+        {showQRModal && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: '0' }}>
+            {/* Backdrop */}
+            <div
               onClick={() => setShowQRModal(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-light transition-all duration-300"
-            >
-              ✕
-            </button>
+              style={{
+                position: 'absolute', inset: 0,
+                background: 'rgba(7,14,30,0.85)', backdropFilter: 'blur(12px)',
+                animation: 'fade-in 0.3s ease-out',
+              }}
+            />
+            {/* Sheet */}
+            <div className="rs-glass" style={{
+              position: 'relative', borderRadius: '24px 24px 0 0', padding: '36px 32px 40px',
+              width: '100%', maxWidth: '460px',
+              boxShadow: '0 -20px 60px rgba(0,0,0,0.5)',
+              animation: 'slide-up 0.35s ease-out',
+            }}>
+              {/* Handle bar */}
+              <div style={{ width: '40px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.15)', margin: '-12px auto 28px' }} />
 
-            <div className="text-center">
-              <h3 className="text-2xl font-bold font-heading mb-2">
-                <span className="gradient-text">Scan QR Code</span>
-              </h3>
-              <p className="text-text-secondary text-sm mb-6">
-                Scan to download on your phone 📱
+              {/* Close */}
+              <button onClick={() => setShowQRModal(false)} style={{
+                position: 'absolute', top: '20px', right: '20px',
+                width: '32px', height: '32px', borderRadius: '50%',
+                background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)',
+                color: '#94a3b8', fontSize: '14px', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.2s',
+              }}>✕</button>
+
+              <h3 style={{
+                fontSize: '26px', fontWeight: '900', marginBottom: '6px', textAlign: 'center',
+                background: 'linear-gradient(to right, #a78bfa, #f472b6)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>Scan & Download</h3>
+              <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '28px' }}>
+                Point your camera at the QR code 📱
               </p>
 
-              {/* QR Code display */}
-              <div className="flex justify-center mb-6">
+              {/* QR area */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
                 {qrLoading ? (
-                  <div className="w-48 h-48 rounded-2xl bg-surface flex items-center justify-center">
-                    <div className="text-center">
-                      <svg className="animate-spin-slow h-8 w-8 text-primary mx-auto mb-2" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      <span className="text-text-muted text-xs">Loading QR...</span>
-                    </div>
+                  <div style={{ width: '200px', height: '200px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg className="rs-spin" style={{ width: '36px', height: '36px', color: '#a78bfa' }} viewBox="0 0 24 24">
+                      <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
+                      <path style={{ opacity: 0.85 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
                   </div>
                 ) : qrData?.qrCode ? (
-                  <div className="bg-white rounded-2xl p-4 shadow-lg">
-                    <img
-                      src={qrData.qrCode}
-                      alt="QR Code"
-                      className="w-48 h-48 object-contain"
-                    />
+                  <div style={{ background: '#fff', borderRadius: '16px', padding: '16px', boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}>
+                    <img src={qrData.qrCode} alt="QR Code" style={{ width: '168px', height: '168px', objectFit: 'contain', display: 'block' }} />
                   </div>
                 ) : (
-                  <div className="w-48 h-48 rounded-2xl bg-surface flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">📱</div>
-                      <p className="text-text-muted text-xs">QR Code unavailable</p>
-                      <p className="text-text-muted text-xs mt-1">Use the download button instead</p>
-                    </div>
+                  <div style={{ width: '200px', height: '200px', borderRadius: '16px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <div style={{ fontSize: '40px' }}>📱</div>
+                    <p style={{ color: '#64748b', fontSize: '12px', textAlign: 'center', lineHeight: '1.5', padding: '0 16px' }}>QR unavailable — use download instead</p>
                   </div>
                 )}
               </div>
 
-              {/* Download link */}
               {qrData?.imageUrl && (
-                <a
-                  href={qrData.imageUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary-light hover:text-primary text-sm underline underline-offset-4 transition-colors"
-                >
-                  Or open link directly →
-                </a>
+                <div style={{ textAlign: 'center' }}>
+                  <a href={qrData.imageUrl} target="_blank" rel="noopener noreferrer" style={{
+                    color: '#a78bfa', fontSize: '14px', fontWeight: '600',
+                    textDecoration: 'underline', textUnderlineOffset: '4px',
+                  }}>Or open link directly →</a>
+                </div>
               )}
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 

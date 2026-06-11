@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import WelcomeScreen from './components/WelcomeScreen';
 import GenderScreen from './components/GenderScreen';
 import TemplateScreen from './components/TemplateScreen';
@@ -17,6 +17,8 @@ function App() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState('');
+  const currentScreenRef = useRef(currentScreen);
+  currentScreenRef.current = currentScreen;
 
   const handleWelcomeSubmit = useCallback(async (name) => {
     try {
@@ -89,8 +91,11 @@ function App() {
         });
         if (!captureRes.ok) throw new Error('Failed to upload image');
 
-        // Poll for result
+        // Poll for result with a max retry count
+        let pollCount = 0;
+        const maxPolls = 40; // 40 * 3s = 2 minutes max
         const pollInterval = setInterval(async () => {
+          pollCount++;
           try {
             const statusRes = await fetch(`${API_BASE}/sessions/${sessionId}/status`);
             const statusData = await statusRes.json();
@@ -103,20 +108,27 @@ function App() {
               clearInterval(pollInterval);
               setError('Image generation failed. Please try again.');
               setCurrentScreen('camera');
+            } else if (pollCount >= maxPolls) {
+              // Timeout: stop polling and show whatever we have
+              clearInterval(pollInterval);
+              console.warn('Polling timed out after', maxPolls, 'attempts. Falling back to captured image.');
+              if (currentScreenRef.current === 'loading') {
+                setGeneratedImageUrl(imageBase64);
+                setCurrentScreen('result');
+              }
             }
           } catch (pollErr) {
             console.error('Polling error:', pollErr);
+            // If polling itself keeps failing, fall back after several errors
+            if (pollCount >= maxPolls) {
+              clearInterval(pollInterval);
+              if (currentScreenRef.current === 'loading') {
+                setGeneratedImageUrl(imageBase64);
+                setCurrentScreen('result');
+              }
+            }
           }
         }, 3000);
-
-        // Timeout after 2 minutes
-        setTimeout(() => {
-          clearInterval(pollInterval);
-          if (currentScreen === 'loading') {
-            setGeneratedImageUrl(imageBase64);
-            setCurrentScreen('result');
-          }
-        }, 120000);
       } else {
         // Mock mode - no backend
         setTimeout(() => {
@@ -129,7 +141,7 @@ function App() {
       setError('Failed to process image. Please try again.');
       setCurrentScreen('camera');
     }
-  }, [sessionId, currentScreen]);
+  }, [sessionId]);
 
   const handleRetake = useCallback(() => {
     setCapturedImage(null);
