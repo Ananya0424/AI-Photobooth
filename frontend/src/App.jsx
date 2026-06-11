@@ -6,7 +6,7 @@ import CameraScreen from './components/CameraScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ResultScreen from './components/ResultScreen';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('welcome');

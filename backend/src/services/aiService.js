@@ -15,8 +15,7 @@ const isMockMode = () => {
   return (
     !token ||
     token === "your_replicate_token_here" ||
-    token === "" ||
-    !token.startsWith("r8_") // Replicate tokens start with r8_
+    token === ""
   );
 };
 

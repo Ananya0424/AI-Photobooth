@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: ai-photobooth
+    env: node
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: REPLICATE_API_TOKEN
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: MONGODB_URI
+        sync: false
+      - key: SESSION_SECRET
+        sync: false

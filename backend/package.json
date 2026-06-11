@@ -13,6 +13,7 @@
     "type": "commonjs",
     "dependencies": {
         "@gradio/client": "^2.2.1",
+        "ai-photobooth-root": "file:..",
         "axios": "^1.17.0",
         "cloudinary": "^2.10.0",
         "cors": "^2.8.6",

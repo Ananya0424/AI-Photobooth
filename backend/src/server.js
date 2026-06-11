@@ -18,6 +18,11 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 // Serve uploaded files statically
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
+// Serve frontend static files in production
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "../../frontend/dist")));
+}
+
 // ===== Health Check =====
 app.get("/health", (req, res) => {
   res.json({
@@ -31,14 +36,21 @@ app.get("/health", (req, res) => {
 // ===== API Routes =====
 app.use(sessionRoutes);
 
-// ===== 404 Handler =====
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Route not found",
-    path: req.originalUrl,
+// ===== Frontend Fallback (for React Router) =====
+if (process.env.NODE_ENV === "production") {
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
   });
-});
+} else {
+  // ===== 404 Handler for dev mode =====
+  app.use((req, res) => {
+    res.status(404).json({
+      success: false,
+      error: "Route not found",
+      path: req.originalUrl,
+    });
+  });
+}
 
 // ===== Error Handling Middleware =====
 app.use((err, req, res, next) => {
