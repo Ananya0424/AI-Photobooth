@@ -11,6 +11,19 @@ const {
   getTemplates,
 } = require("../controllers/sessionController");
 
+const {
+  getSettings,
+  updateSettings,
+} = require("../controllers/settingsController");
+
+// ===== Settings Routes =====
+
+// Get current settings and available models
+router.get("/api/settings", getSettings);
+
+// Update settings (e.g., selected AI model)
+router.put("/api/settings", updateSettings);
+
 // ===== Session Routes =====
 
 // Create a new session

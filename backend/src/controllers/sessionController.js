@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const Session = require("../models/Session");
+const AppSettings = require("../models/AppSettings");
 const { uploadImage, uploadImageFromUrl } = require("../services/cloudinaryService");
 const { generateFaceSwap, isMockMode } = require("../services/aiService");
 const { generateQRCode } = require("../utils/qrCodeGenerator");
@@ -76,6 +77,7 @@ const updateGender = async (req, res) => {
     }
 
     session.gender = gender;
+    session.formAnswers = { ...session.formAnswers, gender: gender };
     session.status = "gender_selected";
 
     // Clear previous template selection when gender changes
@@ -156,6 +158,7 @@ const updateTemplate = async (req, res) => {
       name: template.name,
       imageUrl: template.previewImage,
     };
+    session.formAnswers = { ...session.formAnswers, templateId: template.id, templateName: template.name };
     session.status = "template_selected";
 
     await session.save();
@@ -249,7 +252,15 @@ const captureImage = async (req, res) => {
     const prompt = template ? template.prompt : "";
     const targetTemplateUrl = session.selectedTemplate.imageUrl || "";
 
-    console.log(`[Session] ${sessionId} - Starting AI generation...`);
+    // Fetch the currently selected AI model from app settings
+    const modelSetting = await AppSettings.findOne({ key: "selectedModel" });
+    const selectedModel = modelSetting ? modelSetting.value : "gpt-4o";
+    session.selectedModel = selectedModel;
+    session.generatedPrompt = prompt;
+
+    console.log(`[Session] ${sessionId} - Starting AI generation with model: ${selectedModel}...`);
+
+    const genStart = Date.now();
 
     try {
       const generatedUrl = await generateFaceSwap(
@@ -274,10 +285,12 @@ const captureImage = async (req, res) => {
       }
 
       session.generatedImageUrl = finalUrl;
+      session.generationTimestamp = new Date();
+      session.generationDuration = Date.now() - genStart;
       session.status = "completed";
       await session.save();
 
-      console.log(`[Session] ${sessionId} - AI generation completed: ${finalUrl.substring(0, 80)}...`);
+      console.log(`[Session] ${sessionId} - AI generation completed in ${session.generationDuration}ms: ${finalUrl.substring(0, 80)}...`);
     } catch (aiError) {
       console.error(`[Session] ${sessionId} - AI generation failed:`, aiError.message);
       session.status = "failed";

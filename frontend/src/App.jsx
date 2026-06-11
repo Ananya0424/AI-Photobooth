@@ -1,10 +1,11 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import WelcomeScreen from './components/WelcomeScreen';
 import GenderScreen from './components/GenderScreen';
 import TemplateScreen from './components/TemplateScreen';
 import CameraScreen from './components/CameraScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ResultScreen from './components/ResultScreen';
+import SettingsScreen from './components/SettingsScreen';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
@@ -17,8 +18,50 @@ function App() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
   const [sessionId, setSessionId] = useState(null);
   const [error, setError] = useState('');
+  const [previousScreen, setPreviousScreen] = useState('welcome');
   const currentScreenRef = useRef(currentScreen);
   currentScreenRef.current = currentScreen;
+
+  // Restore session from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('photobooth_session');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.sessionId) {
+          // Validate session still exists on backend
+          fetch(`${API_BASE}/sessions/${parsed.sessionId}/status`)
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                setSessionId(parsed.sessionId);
+                setUserName(parsed.userName || '');
+                setGender(parsed.gender || '');
+                setSelectedTemplate(parsed.selectedTemplate || null);
+                setGeneratedImageUrl(parsed.generatedImageUrl || '');
+                setCapturedImage(parsed.capturedImage || null);
+                setCurrentScreen(parsed.currentScreen || 'welcome');
+              } else {
+                localStorage.removeItem('photobooth_session');
+              }
+            })
+            .catch(() => localStorage.removeItem('photobooth_session'));
+        }
+      } catch (e) {
+        localStorage.removeItem('photobooth_session');
+      }
+    }
+  }, []);
+
+  // Persist session state to localStorage
+  useEffect(() => {
+    if (sessionId) {
+      localStorage.setItem('photobooth_session', JSON.stringify({
+        sessionId, currentScreen, userName, gender,
+        selectedTemplate, generatedImageUrl, capturedImage
+      }));
+    }
+  }, [sessionId, currentScreen, userName, gender, selectedTemplate, generatedImageUrl, capturedImage]);
 
   const handleWelcomeSubmit = useCallback(async (name) => {
     try {
@@ -171,7 +214,17 @@ function App() {
     setGeneratedImageUrl('');
     setSessionId(null);
     setError('');
+    localStorage.removeItem('photobooth_session');
   }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setPreviousScreen(currentScreen);
+    setCurrentScreen('settings');
+  }, [currentScreen]);
+
+  const handleCloseSettings = useCallback(() => {
+    setCurrentScreen(previousScreen);
+  }, [previousScreen]);
 
   const goBack = useCallback((screen) => {
     setError('');
@@ -243,7 +296,39 @@ function App() {
             userName={userName}
           />
         )}
+        {currentScreen === 'settings' && (
+          <SettingsScreen onBack={handleCloseSettings} apiBase={API_BASE} />
+        )}
       </div>
+
+      {/* Floating settings gear button */}
+      {currentScreen !== 'loading' && currentScreen !== 'settings' && (
+        <button
+          onClick={handleOpenSettings}
+          title="Settings"
+          style={{
+            position: 'fixed', top: '24px', right: '24px', zIndex: 40,
+            width: '44px', height: '44px', borderRadius: '50%',
+            background: 'rgba(255,255,255,0.06)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', transition: 'all 0.25s ease',
+            fontSize: '20px', color: '#cbd5e1',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+            e.currentTarget.style.transform = 'scale(1.1) rotate(45deg)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(168,85,247,0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
+          }}
+        >⚙️</button>
+      )}
     </div>
   );
 }

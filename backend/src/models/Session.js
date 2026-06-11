@@ -29,6 +29,27 @@ const SessionSchema = new mongoose.Schema({
     type: String,
     default: null, // Cloudinary URL of final face-swapped output
   },
+  selectedModel: {
+    type: String,
+    default: "gpt-4o",
+  },
+  generatedPrompt: {
+    type: String,
+    default: null,
+  },
+  generationTimestamp: {
+    type: Date,
+    default: null,
+  },
+  generationDuration: {
+    type: Number,
+    default: null, // in milliseconds
+  },
+  formAnswers: {
+    gender: { type: String, default: null },
+    templateId: { type: String, default: null },
+    templateName: { type: String, default: null },
+  },
   status: {
     type: String,
     enum: ["started", "gender_selected", "template_selected", "captured", "generating", "completed", "failed"],

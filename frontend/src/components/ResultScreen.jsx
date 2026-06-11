@@ -6,6 +6,7 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
   const [qrLoading, setQrLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [downloadStatus, setDownloadStatus] = useState('idle');
 
   const imageToShow = generatedImageUrl || capturedImage;
 
@@ -28,12 +29,35 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
     return () => clearTimeout(t);
   }, []);
 
-  const handleDownload = useCallback(() => {
+  const handleDownload = useCallback(async () => {
     if (!imageToShow) return;
-    const a = document.createElement('a');
-    a.href = imageToShow;
-    a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setDownloadStatus('downloading');
+    try {
+      const response = await fetch(imageToShow);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      setDownloadStatus('downloaded');
+      setTimeout(() => setDownloadStatus('idle'), 2000);
+    } catch (err) {
+      console.error('Download failed:', err);
+      // Fallback for base64 images
+      const a = document.createElement('a');
+      a.href = imageToShow;
+      a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
+      a.target = '_self';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setDownloadStatus('downloaded');
+      setTimeout(() => setDownloadStatus('idle'), 2000);
+    }
   }, [imageToShow, userName]);
 
   const handleShowQR = useCallback(async () => {
@@ -213,15 +237,26 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
             </button>
 
             {/* Download — Primary */}
-            <button onClick={handleDownload} className="rs-btn-dl" style={{
-              background: 'linear-gradient(135deg, #a855f7, #ec4899)', border: 'none',
-              borderRadius: '16px', padding: '18px 10px', cursor: 'pointer',
+            <button onClick={handleDownload} disabled={downloadStatus === 'downloading'} className="rs-btn-dl" style={{
+              background: downloadStatus === 'downloaded' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #a855f7, #ec4899)',
+              border: 'none',
+              borderRadius: '16px', padding: '18px 10px', cursor: downloadStatus === 'downloading' ? 'wait' : 'pointer',
               transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column',
               alignItems: 'center', gap: '8px',
-              boxShadow: '0 12px 30px rgba(168,85,247,0.35)',
+              boxShadow: downloadStatus === 'downloaded' ? '0 12px 30px rgba(34,197,94,0.35)' : '0 12px 30px rgba(168,85,247,0.35)',
+              opacity: downloadStatus === 'downloading' ? 0.85 : 1,
             }}>
-              <div style={{ fontSize: '28px', lineHeight: 1 }}>⬇️</div>
-              <span style={{ color: '#fff', fontSize: '13px', fontWeight: '700' }}>Download</span>
+              <div style={{ fontSize: '28px', lineHeight: 1 }}>
+                {downloadStatus === 'downloading' ? (
+                  <svg className="rs-spin" style={{ width: '28px', height: '28px', color: '#fff' }} viewBox="0 0 24 24">
+                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
+                    <path style={{ opacity: 0.85 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                ) : downloadStatus === 'downloaded' ? '✅' : '⬇️'}
+              </div>
+              <span style={{ color: '#fff', fontSize: '13px', fontWeight: '700' }}>
+                {downloadStatus === 'downloading' ? 'Downloading...' : downloadStatus === 'downloaded' ? 'Downloaded ✓' : 'Download'}
+              </span>
             </button>
 
             {/* QR Code */}
