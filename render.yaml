@@ -9,7 +9,7 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: REPLICATE_API_TOKEN
+      - key: HUGGING_FACE_API_TOKEN
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
