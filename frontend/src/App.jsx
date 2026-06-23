@@ -163,22 +163,22 @@ function App() {
               setError(statusData.error ? `Generation failed: ${statusData.error}` : 'Image generation failed. Please try again.');
               setCurrentScreen('camera');
             } else if (pollCount >= maxPolls) {
-              // Timeout: stop polling and show whatever we have
+              // Timeout: stop polling and show error
               clearInterval(pollInterval);
-              console.warn('Polling timed out after', maxPolls, 'attempts. Falling back to captured image.');
+              console.warn('Polling timed out after', maxPolls, 'attempts.');
               if (currentScreenRef.current === 'loading') {
-                setGeneratedImageUrl(imageBase64);
-                setCurrentScreen('result');
+                setError('Image generation timed out. Please try again.');
+                setCurrentScreen('camera');
               }
             }
           } catch (pollErr) {
             console.error('Polling error:', pollErr);
-            // If polling itself keeps failing, fall back after several errors
+            // If polling itself keeps failing, show error after several attempts
             if (pollCount >= maxPolls) {
               clearInterval(pollInterval);
               if (currentScreenRef.current === 'loading') {
-                setGeneratedImageUrl(imageBase64);
-                setCurrentScreen('result');
+                setError('Failed to poll status. Please try again.');
+                setCurrentScreen('camera');
               }
             }
           }
@@ -186,7 +186,7 @@ function App() {
       } else {
         // Mock mode - no backend
         setTimeout(() => {
-          setGeneratedImageUrl(imageBase64);
+          setGeneratedImageUrl(selectedTemplate ? selectedTemplate.imageUrl : imageBase64);
           setCurrentScreen('result');
         }, 3000);
       }

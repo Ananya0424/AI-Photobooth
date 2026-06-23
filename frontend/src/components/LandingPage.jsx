@@ -42,6 +42,13 @@ function LandingPage({ onStart }) {
           background-repeat: no-repeat;
         }
 
+        /* Large screens background anchor */
+        @media (min-width: 1024px) {
+          .lp-bg {
+            background-position: right top;
+          }
+        }
+
         /* Overlay to darken the background slightly */
         .lp-bg-overlay {
           position: absolute;
@@ -70,7 +77,7 @@ function LandingPage({ onStart }) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 24px 60px;
+          padding: 24px clamp(16px, 5vw, 60px);
         }
 
         .lp-logo {
@@ -103,10 +110,15 @@ function LandingPage({ onStart }) {
         }
 
         .lp-hamburger {
+          display: none;
           background: none;
           border: none;
           color: white;
           cursor: pointer;
+          min-width: 44px;
+          min-height: 44px;
+          align-items: center;
+          justify-content: center;
         }
 
         /* Main Content Area */
@@ -121,7 +133,7 @@ function LandingPage({ onStart }) {
 
         /* Hero Content */
         .lp-hero {
-          padding: 20px 60px;
+          padding: 20px clamp(16px, 5vw, 60px);
           max-width: 800px;
         }
 
@@ -152,8 +164,9 @@ function LandingPage({ onStart }) {
         /* Features */
         .lp-features {
           display: flex;
-          gap: 30px;
-          padding: 0 60px;
+          flex-wrap: wrap;
+          gap: clamp(16px, 3vw, 30px);
+          padding: 0 clamp(16px, 5vw, 60px);
           margin-top: 40px;
         }
 
@@ -196,13 +209,13 @@ function LandingPage({ onStart }) {
         /* Marquee Animation */
         @keyframes scrollMarquee {
           0% { transform: translateX(0); }
-          100% { transform: translateX(calc(-160px * 8 - 16px * 8)); } /* Adjust based on card width + gap * number of cards */
+          100% { transform: translateX(calc(-100% / 6)); }
         }
 
         .lp-gallery-grid {
           display: flex;
           width: max-content;
-          gap: 16px;
+          gap: 0;
           animation: scrollMarquee 25s linear infinite;
         }
         
@@ -220,6 +233,7 @@ function LandingPage({ onStart }) {
           border: 1px solid rgba(255,255,255,0.1);
           transition: transform 0.3s ease, border-color 0.3s ease;
           background: #000;
+          margin-right: 16px;
         }
 
         .lp-gallery-card:hover {
@@ -241,16 +255,16 @@ function LandingPage({ onStart }) {
           z-index: 10;
           display: flex;
           justify-content: center;
-          padding: 20px 0 60px;
+          padding: 20px 16px 60px;
         }
 
         .lp-btn-start {
           background: linear-gradient(90deg, #1d4ed8 0%, #9333ea 50%, #db2777 100%);
           border: none;
           border-radius: 50px;
-          padding: 20px 80px;
+          padding: 20px clamp(32px, 8vw, 80px);
           color: white;
-          font-size: 24px;
+          font-size: clamp(16px, 4vw, 24px);
           font-weight: 800;
           letter-spacing: 1.5px;
           display: flex;
@@ -259,6 +273,9 @@ function LandingPage({ onStart }) {
           cursor: pointer;
           transition: transform 0.3s ease, box-shadow 0.3s ease;
           box-shadow: 0 10px 30px rgba(147, 51, 234, 0.3);
+          white-space: nowrap;
+          max-width: calc(100vw - 32px);
+          box-sizing: border-box;
         }
 
         .lp-btn-start:hover {
@@ -267,24 +284,23 @@ function LandingPage({ onStart }) {
         }
 
         /* Responsive */
-        @media (max-width: 1200px) {
-          .lp-gallery-section { justify-content: center; flex-wrap: wrap; }
-          .lp-gallery-grid { flex-wrap: wrap; justify-content: center; }
-        }
-
         @media (max-width: 900px) {
           .lp-links { display: none; }
-          .lp-hero { padding: 40px 30px; }
-          .lp-features { flex-wrap: wrap; padding: 0 30px; gap: 20px; }
+          .lp-hamburger { display: flex; }
           .lp-feature-item::after { display: none; }
-          .lp-gallery-section { padding: 40px 30px; }
           .lp-bg-overlay { background: rgba(7,4,14,0.8); }
         }
 
         @media (max-width: 600px) {
-          .lp-hero-title { font-size: 40px; }
-          .lp-nav { padding: 20px; }
+          .lp-hero-title { font-size: clamp(28px, 8vw, 40px); }
           .lp-gallery-card { width: 140px; height: 190px; }
+        }
+
+        @media (max-width: 375px) {
+          .lp-hero-title { font-size: clamp(24px, 7vw, 32px); }
+          .lp-gallery-card { width: 120px; height: 165px; }
+          .lp-btn-start { padding: 16px 24px; font-size: 15px; }
+          .lp-hero-desc { font-size: 15px; }
         }
       `}</style>
 
@@ -400,8 +416,8 @@ function LandingPage({ onStart }) {
         {/* Gallery with Marquee Auto-Scroll */}
         <div className="lp-gallery-section">
           <div className="lp-gallery-grid">
-            {/* Render 2 sets of items for seamless infinite scroll */}
-            {[...galleryItems, ...galleryItems].map((item, idx) => (
+            {/* Render 6 sets of items for seamless infinite scroll */}
+            {[...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems].map((item, idx) => (
               <div key={idx} className="lp-gallery-card">
                 <img src={item.img} alt={item.name} />
               </div>

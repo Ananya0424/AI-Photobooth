@@ -85,13 +85,14 @@ const restoreFaceCodeFormer = async (imageUrl) => {
       hf_token: process.env.HF_TOKEN || undefined,
     });
 
-    const result = await client.predict("/predict", {
-      image: imageBlob,
-      background_enhance: true,
-      face_upsample: true,
-      upscale: 2,
-      codeformer_fidelity: 0.7, // 0 = quality, 1 = fidelity. 0.7 = good balance
-    });
+    const result = await client.predict("/inference", [
+      imageBlob,
+      true,      // Pre_Face_Align
+      true,      // Background_Enhance
+      true,      // Face_Upsample
+      2,         // Rescaling_Factor (upscale 2x)
+      0.7        // Codeformer_Fidelity
+    ]);
 
     if (result && result.data && result.data[0]) {
       const outputUrl = result.data[0].url || result.data[0];

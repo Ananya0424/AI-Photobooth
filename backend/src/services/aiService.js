@@ -45,30 +45,37 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
   if (isMockMode()) {
     console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured)");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    return sourceImageUrl;
+    return targetTemplateUrl || sourceImageUrl;
   }
 
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Step 1: Generate the base outfit/scene image using DALL-E 3
-    console.log("[AI Service] Generating base image with DALL-E 3...");
+    // Step 1: Generate the base outfit/scene image using selected AI model
+    const modelName = selectedModel || "gpt-image-2";
+    console.log(`[AI Service] Generating base image with model: ${modelName}...`);
     const imagePrompt = `A photorealistic, ultra high-quality, 8K professional portrait photograph of a person. ${prompt}. The person is facing slightly forward with sharp focus on the face. Ultra-detailed skin texture, sharp eyes, realistic lighting. Studio quality photography. Do not add any text or watermarks.`;
     
     let generatedImageUrl;
     try {
-      const response = await openai.images.generate({
-        model: "dall-e-3",
+      const imageParams = {
+        model: modelName,
         prompt: imagePrompt,
         n: 1,
         size: "1024x1024",
-        quality: "hd",        // Use HD quality mode
-        style: "natural",     // Natural style for photorealism
-      });
+      };
+
+      // Model-specific overrides
+      if (modelName === "dall-e-3") {
+        imageParams.quality = "hd";
+        imageParams.style = "natural";
+      }
+
+      const response = await openai.images.generate(imageParams);
 
       if (response && response.data && response.data[0]) {
         generatedImageUrl = response.data[0].url || `data:image/png;base64,${response.data[0].b64_json}`;
-        console.log(`[AI Service] Base image generated successfully (HD quality).`);
+        console.log(`[AI Service] Base image generated successfully using ${modelName}.`);
       } else {
         throw new Error("Unexpected OpenAI API response format");
       }
