@@ -186,7 +186,7 @@ function App() {
       } else {
         // Mock mode - no backend
         setTimeout(() => {
-          setGeneratedImageUrl(selectedTemplate ? selectedTemplate.imageUrl : imageBase64);
+          setGeneratedImageUrl(imageBase64);
           setCurrentScreen('result');
         }, 3000);
       }

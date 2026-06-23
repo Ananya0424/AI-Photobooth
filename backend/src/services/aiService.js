@@ -45,7 +45,7 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
   if (isMockMode()) {
     console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured)");
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    return targetTemplateUrl || sourceImageUrl;
+    return sourceImageUrl;
   }
 
   try {
@@ -81,8 +81,7 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
       }
     } catch (openaiError) {
       console.error("[AI Service] OpenAI generation failed:", openaiError.message);
-      console.log("[AI Service] Falling back to the template image as the target.");
-      generatedImageUrl = targetTemplateUrl; // Fallback to template if DALL-E fails
+      throw new Error(`OpenAI image generation failed: ${openaiError.message}`);
     }
 
     if (!generatedImageUrl) {
