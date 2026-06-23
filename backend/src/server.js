@@ -75,6 +75,22 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
 
+    // Verify SMTP connection
+    const { getTransporter } = require("./services/emailService");
+    const transporter = getTransporter();
+    if (transporter) {
+      console.log("[Email Service] Verifying SMTP connection...");
+      transporter.verify((error) => {
+        if (error) {
+          console.error("[Email Service] SMTP verification failed:", error.message);
+        } else {
+          console.log("[Email Service] SMTP connection verified successfully! ready to send emails.");
+        }
+      });
+    } else {
+      console.warn("[Email Service] SMTP transporter not configured (no credentials).");
+    }
+
     app.listen(PORT, () => {
       console.log("");
       console.log("===================================================");
