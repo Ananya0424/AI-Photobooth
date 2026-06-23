@@ -5,7 +5,7 @@ const styleTemplates = {
     name: "Avenger",
     backgroundName: "Battlefield",
     gender: "male",
-    prompt: "Transform the user into a cinematic Iron Man-style superhero wearing ultra-detailed red and gold armor with glowing arc reactor. Destroyed city battlefield background with fire and debris. Dramatic volumetric lighting, sharp facial features, hyper-detailed skin texture, ultra sharp focus, 8K, professional photography.",
+    prompt: "Transform the user into a futuristic superhero wearing sleek, high-tech metallic red and gold armor with a glowing chest core. High-tech city skyline background at sunset with dramatic orange light. Dramatic volumetric lighting, sharp facial features, hyper-detailed skin texture, ultra sharp focus, 8K, professional photography.",
     previewImage: "/assets/templates/male_avenger.jpg",
   },
   male_astronaut: {
@@ -13,7 +13,7 @@ const styleTemplates = {
     name: "Astronaut",
     backgroundName: "Space",
     gender: "male",
-    prompt: "Transform the user into a realistic NASA astronaut wearing a highly detailed white space suit with American flag patch and NASA logo. Earth visible in the background from space station viewport. Sharp facial details, realistic skin texture, cinematic space lighting with rim light, ultra sharp focus, 8K, professional photography.",
+    prompt: "Transform the user into a realistic astronaut wearing a highly detailed white space suit with mission patches. Earth visible in the background from space station viewport. Sharp facial details, realistic skin texture, cinematic space lighting with rim light, ultra sharp focus, 8K, professional photography.",
     previewImage: "/assets/templates/male_astronaut.jpg",
   },
   male_king: {
@@ -31,7 +31,7 @@ const styleTemplates = {
     name: "Avenger",
     backgroundName: "Battlefield",
     gender: "female",
-    prompt: "Transform the user into a powerful Captain Marvel-style female superhero wearing detailed red, blue and gold armor with glowing star emblem. Dramatic battlefield background with explosions and energy effects. Cinematic dramatic lighting, sharp facial features, detailed skin texture, flowing hair, ultra sharp focus, 8K, professional photography.",
+    prompt: "Transform the user into a powerful cosmic superhero wearing detailed red, blue and gold armor with a glowing chest emblem. Dramatic sky background with colorful swirling stellar energy and light rays. Cinematic dramatic lighting, sharp facial features, detailed skin texture, flowing hair, ultra sharp focus, 8K, professional photography.",
     previewImage: "/assets/templates/female_avenger.jpg",
   },
   female_astronaut: {
@@ -39,7 +39,7 @@ const styleTemplates = {
     name: "Astronaut",
     backgroundName: "Space",
     gender: "female",
-    prompt: "Transform the user into a realistic female NASA astronaut wearing a highly detailed white space suit with patches and badges. Space station interior with Earth visible through a large circular viewport. Sharp facial details, realistic skin, cinematic space lighting with blue rim light, ultra sharp focus, 8K, professional photography.",
+    prompt: "Transform the user into a realistic female astronaut wearing a highly detailed white space suit with patches. Space station interior with Earth visible through a large circular viewport. Sharp facial details, realistic skin, cinematic space lighting with blue rim light, ultra sharp focus, 8K, professional photography.",
     previewImage: "/assets/templates/female_astronaut.jpg",
   },
   female_queen: {
