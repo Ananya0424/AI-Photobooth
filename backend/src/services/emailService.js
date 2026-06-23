@@ -11,14 +11,12 @@ const getTransporter = () => {
   const pass = process.env.EMAIL_PASS;
 
   if (!user || !pass || user.includes("your_gmail") || pass.includes("your_app_password")) {
-    console.warn("[Email Service] EMAIL_USER or EMAIL_PASS not configured correctly. Email sending will be mocked.");
+    console.warn("[Email Service] EMAIL_USER or EMAIL_PASS not configured correctly.");
     return null;
   }
 
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false, // true for port 465, false for other ports
+    service: "gmail",
     auth: { user, pass },
   });
 };
@@ -51,6 +49,9 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
   const transporter = getTransporter();
 
   if (!transporter) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("Email service is not configured. Please define EMAIL_USER and EMAIL_PASS environment variables.");
+    }
     console.log("[Email Service] MOCK MODE: Simulating email delivery success.");
     await new Promise((resolve) => setTimeout(resolve, 1500));
     return { success: true, message: "Email delivery mocked successfully." };
