@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 
-function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, onGetQR, userName }) {
+function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, onGetQR, userName, onShare, sessionId }) {
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrData, setQrData] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [downloadStatus, setDownloadStatus] = useState('idle');
+  const [shareStatus, setShareStatus] = useState('idle');
+  const [shareMessage, setShareMessage] = useState('');
 
   const imageToShow = generatedImageUrl || capturedImage;
 
@@ -29,36 +30,25 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
     return () => clearTimeout(t);
   }, []);
 
-  const handleDownload = useCallback(async () => {
-    if (!imageToShow) return;
-    setDownloadStatus('downloading');
+  const handleShare = useCallback(async () => {
+    if (!sessionId) return;
+    setShareStatus('sending');
+    setShareMessage('');
     try {
-      const response = await fetch(imageToShow);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
-      setDownloadStatus('downloaded');
-      setTimeout(() => setDownloadStatus('idle'), 2000);
+      const result = await onShare();
+      if (result && result.success) {
+        setShareStatus('sent');
+        setShareMessage('Portrait sent to your email! 📧');
+      } else {
+        setShareStatus('error');
+        setShareMessage(result?.error || 'Failed to send email');
+      }
     } catch (err) {
-      console.error('Download failed:', err);
-      // Fallback for base64 images
-      const a = document.createElement('a');
-      a.href = imageToShow;
-      a.download = `ai-photobooth-${userName || 'photo'}-${Date.now()}.jpg`;
-      a.target = '_self';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setDownloadStatus('downloaded');
-      setTimeout(() => setDownloadStatus('idle'), 2000);
+      setShareStatus('error');
+      setShareMessage('Failed to send email. Please try again.');
     }
-  }, [imageToShow, userName]);
+    setTimeout(() => { setShareStatus('idle'); setShareMessage(''); }, 5000);
+  }, [sessionId, onShare]);
 
   const handleShowQR = useCallback(async () => {
     setShowQRModal(true); setQrLoading(true);
@@ -89,8 +79,8 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
         }
         .rs-spin { animation:spin-slow 1.5s linear infinite; }
         .rs-glow { animation:glow-pulse 2.5s ease-in-out infinite; }
-        .rs-btn-dl:hover { box-shadow:0 20px 40px rgba(168,85,247,0.5);transform:translateY(-3px) scale(1.02); }
-        .rs-btn-dl:active { transform:scale(0.97); }
+        .rs-btn-share:hover { box-shadow:0 20px 40px rgba(168,85,247,0.5);transform:translateY(-3px) scale(1.02); }
+        .rs-btn-share:active { transform:scale(0.97); }
         .rs-btn-sec:hover { background:rgba(255,255,255,0.1);transform:translateY(-2px); }
         .rs-btn-sec:active { transform:scale(0.97); }
         .rs-back:hover { color:#e2e8f0; }
@@ -236,26 +226,26 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
               <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>Regenerate</span>
             </button>
 
-            {/* Download — Primary */}
-            <button onClick={handleDownload} disabled={downloadStatus === 'downloading'} className="rs-btn-dl" style={{
-              background: downloadStatus === 'downloaded' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : 'linear-gradient(135deg, #a855f7, #ec4899)',
+            {/* Share — Primary */}
+            <button onClick={handleShare} disabled={shareStatus === 'sending'} className="rs-btn-share" style={{
+              background: shareStatus === 'sent' ? 'linear-gradient(135deg, #22c55e, #16a34a)' : shareStatus === 'error' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #a855f7, #ec4899)',
               border: 'none',
-              borderRadius: '16px', padding: '18px 10px', cursor: downloadStatus === 'downloading' ? 'wait' : 'pointer',
+              borderRadius: '16px', padding: '18px 10px', cursor: shareStatus === 'sending' ? 'wait' : 'pointer',
               transition: 'all 0.25s ease', display: 'flex', flexDirection: 'column',
               alignItems: 'center', gap: '8px',
-              boxShadow: downloadStatus === 'downloaded' ? '0 12px 30px rgba(34,197,94,0.35)' : '0 12px 30px rgba(168,85,247,0.35)',
-              opacity: downloadStatus === 'downloading' ? 0.85 : 1,
+              boxShadow: shareStatus === 'sent' ? '0 12px 30px rgba(34,197,94,0.35)' : shareStatus === 'error' ? '0 12px 30px rgba(239,68,68,0.35)' : '0 12px 30px rgba(168,85,247,0.35)',
+              opacity: shareStatus === 'sending' ? 0.85 : 1,
             }}>
               <div style={{ fontSize: '28px', lineHeight: 1 }}>
-                {downloadStatus === 'downloading' ? (
+                {shareStatus === 'sending' ? (
                   <svg className="rs-spin" style={{ width: '28px', height: '28px', color: '#fff' }} viewBox="0 0 24 24">
                     <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
                     <path style={{ opacity: 0.85 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
-                ) : downloadStatus === 'downloaded' ? '✅' : '⬇️'}
+                ) : shareStatus === 'sent' ? '✅' : shareStatus === 'error' ? '❌' : '📧'}
               </div>
               <span style={{ color: '#fff', fontSize: '13px', fontWeight: '700' }}>
-                {downloadStatus === 'downloading' ? 'Downloading...' : downloadStatus === 'downloaded' ? 'Downloaded ✓' : 'Download'}
+                {shareStatus === 'sending' ? 'Sending...' : shareStatus === 'sent' ? 'Sent! ✓' : shareStatus === 'error' ? 'Failed ✗' : 'Share'}
               </span>
             </button>
 
@@ -270,6 +260,30 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
               <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>QR Code</span>
             </button>
           </div>
+
+          {/* Share toast message */}
+          {shareMessage && (
+            <div style={{
+              textAlign: 'center',
+              marginBottom: '16px',
+              animation: 'slide-up 0.4s ease-out',
+            }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: '600',
+                background: shareStatus === 'sent' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                border: `1px solid ${shareStatus === 'sent' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                color: shareStatus === 'sent' ? '#4ade80' : '#f87171',
+              }}>
+                {shareMessage}
+              </div>
+            </div>
+          )}
 
           {/* Back to home */}
           <div style={{ textAlign: 'center', animation: 'fade-in 0.6s ease-out 0.5s both' }}>

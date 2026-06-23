@@ -28,8 +28,7 @@ graph TD
     Frontend -->|API Requests| Backend[Backend Express Server]
     Backend -->|Metadata / Settings| DB[(MongoDB)]
     Backend -->|Webcam Uploads / Results| Cloudinary[Cloudinary Cloud Storage]
-    Backend -->|AI Prompt Enhancement| OpenAI[OpenAI API]
-    Backend -->|Face-Swap Prediction| HuggingFace[Hugging Face Space - tonyassi/face-swap]
+    Backend -->|AI Image Gen & Prompt Enhancement| OpenAI[OpenAI API]
 ```
 
 ---
@@ -45,8 +44,7 @@ graph TD
     *   Mongoose (MongoDB Object Modeling)
     *   Dotenv (Secure configuration management)
 *   **Cloud & AI Integrations:**
-    *   **OpenAI SDK** (Prompt enhancement via LLMs)
-    *   **Gradio Client** (Face swap prediction model)
+    *   **OpenAI SDK** (Image generation and prompt enhancement via selected models)
     *   **Cloudinary SDK** (Image hosting and content delivery network)
     *   **QRCode** (Dynamic QR matrix generation)
 
@@ -139,7 +137,6 @@ CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
 # AI Models (Optional - will run in mock mode if empty)
-HUGGING_FACE_API_TOKEN=your_hugging_face_token
 OPENAI_API_KEY=your_openai_api_key
 ```
 
@@ -160,5 +157,5 @@ This repository is optimized for deployment as a unified Web Service using **Ren
 
 1. Go to **Render.com** and connect your GitHub repository.
 2. Select **Web Service** or use the **Blueprints** tab to auto-discover `render.yaml`.
-3. Set your environment variables in the Render Dashboard (`MONGODB_URI`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `HUGGING_FACE_API_TOKEN`, `OPENAI_API_KEY`, etc.).
+3. Set your environment variables in the Render Dashboard (`MONGODB_URI`, `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `OPENAI_API_KEY`, etc.).
 4. Click **Deploy**. Render will automatically build the static React bundle, copy it to the public backend distribution folder, and start the node server.

@@ -1,60 +1,54 @@
 const styleTemplates = {
   // ===== Male Templates =====
-  formal_suit: {
-    id: "formal_suit",
-    name: "Formal Suit",
-    backgroundName: "Corporate Background",
+  male_avenger: {
+    id: "male_avenger",
+    name: "Avenger",
+    backgroundName: "Battlefield",
     gender: "male",
-    prompt:
-      "A professional man wearing a perfectly tailored formal black suit with a crisp white shirt and silk tie, standing confidently in a modern corporate office with glass windows overlooking a city skyline, studio lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/formal_suit.jpg",
+    prompt: "Transform the user into a cinematic superhero with advanced armor. Action-packed destroyed city background, dramatic lighting, 8k.",
+    previewImage: "/assets/templates/male_avenger.jpg",
   },
-  kurta_pajama: {
-    id: "kurta_pajama",
-    name: "Traditional Kurta Pajama",
-    backgroundName: "Indian Heritage Background",
+  male_astronaut: {
+    id: "male_astronaut",
+    name: "Astronaut",
+    backgroundName: "Space",
     gender: "male",
-    prompt:
-      "A man wearing an elegant traditional white and gold embroidered kurta pajama, standing in front of a beautiful Indian heritage monument with intricate Mughal architecture, warm golden lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/kurta_pajama.jpg",
+    prompt: "Transform the user into a realistic astronaut wearing a modern space suit. Cinematic space lighting, 8k.",
+    previewImage: "/assets/templates/male_astronaut.jpg",
   },
-  sherwani: {
-    id: "sherwani",
-    name: "Sherwani",
-    backgroundName: "Palace Background",
+  male_king: {
+    id: "male_king",
+    name: "King",
+    backgroundName: "Royal Court",
     gender: "male",
-    prompt:
-      "A man wearing a royal deep maroon sherwani with gold zari embroidery and a matching turban, standing in a grand Indian palace with ornate pillars and chandeliers, regal lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/sherwani.jpg",
+    prompt: "Transform the user into a majestic king wearing an ornate crown and luxurious royal robes. Grand golden palace background, regal lighting, 8k.",
+    previewImage: "/assets/templates/male_king.jpg",
   },
 
   // ===== Female Templates =====
-  saree: {
-    id: "saree",
-    name: "Saree",
-    backgroundName: "Temple Background",
+  female_avenger: {
+    id: "female_avenger",
+    name: "Avenger",
+    backgroundName: "Battlefield",
     gender: "female",
-    prompt:
-      "A woman wearing a stunning red and gold silk saree with intricate zari border and traditional jewelry, standing gracefully in front of a grand ancient Indian temple with carved stone pillars, warm natural lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/saree.jpg",
+    prompt: "Transform the user into an Avengers-inspired female superhero with cinematic armor and glowing elements. Action-packed background, dramatic lighting, 8k.",
+    previewImage: "/assets/templates/female_avenger.jpg",
   },
-  salwar_suit: {
-    id: "salwar_suit",
-    name: "Salwar Suit",
-    backgroundName: "Garden Background",
+  female_astronaut: {
+    id: "female_astronaut",
+    name: "Astronaut",
+    backgroundName: "Space",
     gender: "female",
-    prompt:
-      "A beautiful woman wearing an elegant traditional Indian salwar suit with intricate embroidery and a graceful dupatta, standing in a lush palace garden with blooming flowers, warm golden hour lighting, photorealistic, 8k quality",
-    previewImage: "/assets/templates/salwar_suit.jpg",
+    prompt: "Transform the user into a realistic female astronaut wearing a detailed modern space suit. Cinematic space lighting, 8k.",
+    previewImage: "/assets/templates/female_astronaut.jpg",
   },
-  formal_women: {
-    id: "formal_women",
-    name: "Formal Suit & Glasses",
-    backgroundName: "Modern Corporate Corridor",
+  female_queen: {
+    id: "female_queen",
+    name: "Queen",
+    backgroundName: "Royal Court",
     gender: "female",
-    prompt:
-      "A professional woman wearing glasses, a tailored black blazer suit, and a white button-up shirt, holding folders and notebooks, standing in front of a modern corporate glass building corridor, corporate professional look, photorealistic, 8k quality",
-    previewImage: "/assets/templates/formal_women.jpg",
+    prompt: "Transform the user into an elegant queen wearing a beautiful jeweled crown and a majestic royal gown. Grand golden palace background, elegant lighting, 8k.",
+    previewImage: "/assets/templates/female_queen.jpg",
   },
 };
 

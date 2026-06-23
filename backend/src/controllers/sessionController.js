@@ -6,6 +6,7 @@ const { generateFaceSwap, isMockMode } = require("../services/aiService");
 const { generateQRCode } = require("../utils/qrCodeGenerator");
 const { getTemplatesByGender, getTemplateById } = require("../utils/stylePrompts");
 const { enhancePrompt } = require("../services/openaiService");
+const { sendPortraitEmail } = require("../services/emailService");
 
 /**
  * Create a new photobooth session
@@ -14,7 +15,7 @@ const { enhancePrompt } = require("../services/openaiService");
  */
 const createSession = async (req, res) => {
   try {
-    const { userName } = req.body;
+    const { userName, email, phone } = req.body;
 
     if (!userName || !userName.trim()) {
       return res.status(400).json({
@@ -23,17 +24,35 @@ const createSession = async (req, res) => {
       });
     }
 
+    // Validate email format if provided
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid email format",
+      });
+    }
+
+    // Validate phone has at least 10 digits if provided
+    if (phone && phone.replace(/\D/g, "").length < 10) {
+      return res.status(400).json({
+        success: false,
+        error: "Phone number must have at least 10 digits",
+      });
+    }
+
     const sessionId = uuidv4();
 
     const session = new Session({
       sessionId,
       userName: userName.trim(),
+      email: email || null,
+      phone: phone || null,
       status: "started",
     });
 
     await session.save();
 
-    console.log(`[Session] Created new session: ${sessionId} for user: ${userName}`);
+    console.log(`[Session] Created new session: ${sessionId} for user: ${userName}, email: ${email || "N/A"}`);
 
     return res.status(201).json({
       success: true,
@@ -255,7 +274,7 @@ const captureImage = async (req, res) => {
 
     // Fetch the currently selected AI model from app settings
     const modelSetting = await AppSettings.findOne({ key: "selectedModel" });
-    const selectedModel = modelSetting ? modelSetting.value : "gpt-4o";
+    const selectedModel = modelSetting ? modelSetting.value : "gpt-image-2";
     session.selectedModel = selectedModel;
 
     // Enhance prompt using the selected OpenAI model (if API key is present)
@@ -275,7 +294,8 @@ const captureImage = async (req, res) => {
       const generatedUrl = await generateFaceSwap(
         rawImageUrl,
         targetTemplateUrl,
-        finalPrompt
+        finalPrompt,
+        selectedModel
       );
 
       // If the generated URL is different from source and not a data URI, upload to Cloudinary
@@ -303,6 +323,7 @@ const captureImage = async (req, res) => {
     } catch (aiError) {
       console.error(`[Session] ${sessionId} - AI generation failed:`, aiError.message);
       session.status = "failed";
+      session.errorMessage = aiError.message;
       await session.save();
     }
   } catch (error) {
@@ -345,6 +366,7 @@ const getStatus = async (req, res) => {
       rawUserImageUrl: session.rawUserImageUrl,
       generatedImageUrl: session.generatedImageUrl,
       status: session.status,
+      error: session.errorMessage,
       createdAt: session.createdAt,
     });
   } catch (error) {
@@ -437,6 +459,27 @@ const getTemplates = async (req, res) => {
   }
 };
 
+/**
+ * Share generated image via email
+ * POST /api/sessions/:sessionId/share
+ */
+const shareImage = async (req, res) => {
+  try {
+    const { sessionId } = req.params;
+    const session = await Session.findOne({ sessionId });
+    if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
+    if (!session.generatedImageUrl) return res.status(400).json({ success: false, error: 'No generated image available yet' });
+    if (!session.email) return res.status(400).json({ success: false, error: 'No email address on file' });
+
+    await sendPortraitEmail(session.email, session.userName, session.generatedImageUrl);
+    console.log(`[Session] ${sessionId} - Portrait shared to ${session.email}`);
+    return res.json({ success: true, message: 'Portrait sent to your email!' });
+  } catch (error) {
+    console.error('[Session] Error sharing image:', error.message);
+    return res.status(500).json({ success: false, error: 'Failed to send email', details: error.message });
+  }
+};
+
 module.exports = {
   createSession,
   updateGender,
@@ -445,4 +488,5 @@ module.exports = {
   getStatus,
   generateQR,
   getTemplates,
+  shareImage,
 };

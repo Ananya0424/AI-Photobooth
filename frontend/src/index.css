@@ -295,3 +295,59 @@ input:focus {
   animation: flash 0.4s ease-out forwards;
   pointer-events: none;
 }
+
+/* ===== Responsive Utilities ===== */
+
+/* Tablet and below */
+@media (max-width: 768px) {
+  body {
+    font-size: 15px;
+  }
+
+  .screen-enter {
+    animation: fade-in 0.3s ease-out, slide-up 0.3s ease-out;
+  }
+
+  .glass, .glass-strong {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  .btn-glow:hover {
+    transform: none;
+  }
+
+  .card-hover:hover {
+    transform: none;
+  }
+
+  .glass {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* Landscape phone */
+@media (orientation: landscape) and (max-height: 500px) {
+  body {
+    overflow-y: auto;
+  }
+
+  .screen-enter {
+    animation: fade-in 0.2s ease-out;
+  }
+}
+
+/* Touch-friendly targets */
+@media (pointer: coarse) {
+  button, a, select, input {
+    min-height: 44px;
+  }
+}

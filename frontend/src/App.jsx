@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import LandingPage from './components/LandingPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import GenderScreen from './components/GenderScreen';
 import TemplateScreen from './components/TemplateScreen';
@@ -10,8 +11,10 @@ import SettingsScreen from './components/SettingsScreen';
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState('welcome');
+  const [currentScreen, setCurrentScreen] = useState('landing');
   const [userName, setUserName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [gender, setGender] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [capturedImage, setCapturedImage] = useState(null);
@@ -36,6 +39,8 @@ function App() {
               if (data.success) {
                 setSessionId(parsed.sessionId);
                 setUserName(parsed.userName || '');
+                setEmail(parsed.email || '');
+                setPhone(parsed.phone || '');
                 setGender(parsed.gender || '');
                 setSelectedTemplate(parsed.selectedTemplate || null);
                 setGeneratedImageUrl(parsed.generatedImageUrl || '');
@@ -57,20 +62,26 @@ function App() {
   useEffect(() => {
     if (sessionId) {
       localStorage.setItem('photobooth_session', JSON.stringify({
-        sessionId, currentScreen, userName, gender,
+        sessionId, currentScreen, userName, email, phone, gender,
         selectedTemplate, generatedImageUrl, capturedImage
       }));
     }
-  }, [sessionId, currentScreen, userName, gender, selectedTemplate, generatedImageUrl, capturedImage]);
+  }, [sessionId, currentScreen, userName, email, phone, gender, selectedTemplate, generatedImageUrl, capturedImage]);
 
-  const handleWelcomeSubmit = useCallback(async (name) => {
+  const handleStartFromLanding = useCallback(() => {
+    setCurrentScreen('welcome');
+  }, []);
+
+  const handleWelcomeSubmit = useCallback(async ({ name, email: userEmail, phone: userPhone }) => {
     try {
       setError('');
       setUserName(name);
+      setEmail(userEmail);
+      setPhone(userPhone);
       const res = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName: name }),
+        body: JSON.stringify({ userName: name, email: userEmail, phone: userPhone }),
       });
       if (!res.ok) throw new Error('Failed to create session');
       const data = await res.json();
@@ -136,7 +147,7 @@ function App() {
 
         // Poll for result with a max retry count
         let pollCount = 0;
-        const maxPolls = 40; // 40 * 3s = 2 minutes max
+        const maxPolls = 120; // 120 * 3s = 6 minutes max
         const pollInterval = setInterval(async () => {
           pollCount++;
           try {
@@ -149,7 +160,7 @@ function App() {
               setCurrentScreen('result');
             } else if (statusData.status === 'failed') {
               clearInterval(pollInterval);
-              setError('Image generation failed. Please try again.');
+              setError(statusData.error ? `Generation failed: ${statusData.error}` : 'Image generation failed. Please try again.');
               setCurrentScreen('camera');
             } else if (pollCount >= maxPolls) {
               // Timeout: stop polling and show whatever we have
@@ -205,9 +216,22 @@ function App() {
     }
   }, [sessionId]);
 
+  const handleShareImage = useCallback(async () => {
+    if (!sessionId) return { success: false, error: 'No session' };
+    try {
+      const res = await fetch(`${API_BASE}/sessions/${sessionId}/share`, { method: 'POST' });
+      const data = await res.json();
+      return data;
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  }, [sessionId]);
+
   const handleRestart = useCallback(() => {
-    setCurrentScreen('welcome');
+    setCurrentScreen('landing');
     setUserName('');
+    setEmail('');
+    setPhone('');
     setGender('');
     setSelectedTemplate(null);
     setCapturedImage(null);
@@ -258,8 +282,11 @@ function App() {
 
       {/* Screen rendering */}
       <div className="relative z-10">
+        {currentScreen === 'landing' && (
+          <LandingPage onStart={handleStartFromLanding} />
+        )}
         {currentScreen === 'welcome' && (
-          <WelcomeScreen onSubmit={handleWelcomeSubmit} />
+          <WelcomeScreen onSubmit={handleWelcomeSubmit} onBack={() => goBack('landing')} />
         )}
         {currentScreen === 'gender' && (
           <GenderScreen
@@ -294,6 +321,8 @@ function App() {
             onRestart={handleRestart}
             onGetQR={handleGetQR}
             userName={userName}
+            onShare={handleShareImage}
+            sessionId={sessionId}
           />
         )}
         {currentScreen === 'settings' && (
@@ -302,7 +331,7 @@ function App() {
       </div>
 
       {/* Floating settings gear button */}
-      {currentScreen !== 'loading' && currentScreen !== 'settings' && (
+      {currentScreen !== 'loading' && currentScreen !== 'settings' && currentScreen !== 'landing' && (
         <button
           onClick={handleOpenSettings}
           title="Settings"

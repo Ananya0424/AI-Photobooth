@@ -11,6 +11,16 @@ const SessionSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  email: {
+    type: String,
+    trim: true,
+    default: null,
+  },
+  phone: {
+    type: String,
+    trim: true,
+    default: null,
+  },
   gender: {
     type: String,
     enum: ["male", "female"],
@@ -31,7 +41,11 @@ const SessionSchema = new mongoose.Schema({
   },
   selectedModel: {
     type: String,
-    default: "gpt-4o",
+    default: "gpt-image-2",
+  },
+  errorMessage: {
+    type: String,
+    default: null,
   },
   generatedPrompt: {
     type: String,

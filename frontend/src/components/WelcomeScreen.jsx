@@ -1,9 +1,38 @@
-﻿import { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 
-function WelcomeScreen({ onSubmit }) {
+function WelcomeScreen({ onSubmit, onBack }) {
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [emailError, setEmailError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [phoneFocused, setPhoneFocused] = useState(false);
+
+  const validateEmail = (val) => {
+    if (!val.trim()) return '';
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val) ? '' : 'Please enter a valid email address';
+  };
+
+  const validatePhone = (val) => {
+    if (!val.trim()) return '';
+    const digits = val.replace(/\D/g, '');
+    return digits.length >= 10 ? '' : 'Phone number must have at least 10 digits';
+  };
+
+  const handleEmailChange = (e) => {
+    const val = e.target.value;
+    setEmail(val);
+    setEmailError(validateEmail(val));
+  };
+
+  const handlePhoneChange = (e) => {
+    const val = e.target.value;
+    setPhone(val);
+    setPhoneError(validatePhone(val));
+  };
 
   const sparkles = useMemo(() => {
     return Array.from({ length: 20 }, (_, i) => ({
@@ -18,17 +47,17 @@ function WelcomeScreen({ onSubmit }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || isSubmitting) return;
+    if (!name.trim() || !email.trim() || !phone.trim() || isSubmitting || !!emailError || !!phoneError) return;
     setIsSubmitting(true);
     try {
-      await onSubmit(name.trim());
+      await onSubmit({ name: name.trim(), email: email.trim(), phone: phone.trim() });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && name.trim() && !isSubmitting) {
+    if (e.key === 'Enter' && name.trim() && email.trim() && phone.trim() && !isSubmitting && !emailError && !phoneError) {
       handleSubmit(e);
     }
   };
@@ -173,6 +202,42 @@ function WelcomeScreen({ onSubmit }) {
             />
           ))}
         </div>
+
+        {/* Back Button */}
+        {onBack && (
+          <button
+            onClick={onBack}
+            style={{
+              position: 'absolute',
+              top: '24px',
+              left: '24px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              zIndex: 50,
+              backdropFilter: 'blur(10px)',
+              transition: 'all 0.3s ease',
+              fontSize: '16px',
+              fontWeight: '500'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span style={{ fontSize: '20px' }}>←</span> Back
+          </button>
+        )}
 
         {/* Floating emojis */}
         <div
@@ -359,10 +424,104 @@ function WelcomeScreen({ onSubmit }) {
                 </label>
               </div>
 
+              {/* Email input with floating label */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="email"
+                  id="userEmail"
+                  value={email}
+                  onChange={handleEmailChange}
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                  onKeyPress={handleKeyPress}
+                  placeholder=" "
+                  style={{
+                    width: '100%',
+                    padding: '20px 20px 8px 20px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${emailError ? 'rgba(248, 113, 113, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
+                    borderRadius: '12px',
+                    color: '#ffffff',
+                    fontSize: '18px',
+                    transition: 'all 0.3s ease',
+                    backdropFilter: 'blur(8px)',
+                    outline: 'none',
+                    caretColor: '#a855f7',
+                  }}
+                  maxLength={50}
+                  autoComplete="off"
+                />
+                <label
+                  htmlFor="userEmail"
+                  style={{
+                    position: 'absolute',
+                    left: '20px',
+                    transition: 'all 0.3s ease',
+                    pointerEvents: 'none',
+                    top: email || emailFocused ? '4px' : '16px',
+                    fontSize: email || emailFocused ? '12px' : '16px',
+                    color: email || emailFocused ? '#a78bfa' : '#9ca3af',
+                    fontWeight: '500',
+                  }}
+                >
+                  Email address
+                </label>
+                {emailError && email && (
+                  <p style={{ color: '#f87171', fontSize: '12px', marginTop: '6px', marginLeft: '4px' }}>{emailError}</p>
+                )}
+              </div>
+
+              {/* Phone input with floating label */}
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="tel"
+                  id="userPhone"
+                  value={phone}
+                  onChange={handlePhoneChange}
+                  onFocus={() => setPhoneFocused(true)}
+                  onBlur={() => setPhoneFocused(false)}
+                  onKeyPress={handleKeyPress}
+                  placeholder=" "
+                  style={{
+                    width: '100%',
+                    padding: '20px 20px 8px 20px',
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    border: `1px solid ${phoneError ? 'rgba(248, 113, 113, 0.5)' : 'rgba(255, 255, 255, 0.2)'}`,
+                    borderRadius: '12px',
+                    color: '#ffffff',
+                    fontSize: '18px',
+                    transition: 'all 0.3s ease',
+                    backdropFilter: 'blur(8px)',
+                    outline: 'none',
+                    caretColor: '#a855f7',
+                  }}
+                  maxLength={15}
+                  autoComplete="off"
+                />
+                <label
+                  htmlFor="userPhone"
+                  style={{
+                    position: 'absolute',
+                    left: '20px',
+                    transition: 'all 0.3s ease',
+                    pointerEvents: 'none',
+                    top: phone || phoneFocused ? '4px' : '16px',
+                    fontSize: phone || phoneFocused ? '12px' : '16px',
+                    color: phone || phoneFocused ? '#a78bfa' : '#9ca3af',
+                    fontWeight: '500',
+                  }}
+                >
+                  Phone number
+                </label>
+                {phoneError && phone && (
+                  <p style={{ color: '#f87171', fontSize: '12px', marginTop: '6px', marginLeft: '4px' }}>{phoneError}</p>
+                )}
+              </div>
+
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={!name.trim() || isSubmitting}
+                disabled={!name.trim() || !email.trim() || !phone.trim() || isSubmitting || !!emailError || !!phoneError}
                 style={{
                   width: '100%',
                   padding: '16px 32px',
@@ -372,14 +531,14 @@ function WelcomeScreen({ onSubmit }) {
                   border: 'none',
                   letterSpacing: '0.5px',
                   transition: 'all 0.3s ease',
-                  background: name.trim()
+                  background: (name.trim() && email.trim() && phone.trim() && !emailError && !phoneError)
                     ? 'linear-gradient(to right, #a855f7, #ec4899)'
                     : 'rgba(255, 255, 255, 0.05)',
-                  color: name.trim() ? '#ffffff' : '#9ca3af',
-                  boxShadow: name.trim()
+                  color: (name.trim() && email.trim() && phone.trim() && !emailError && !phoneError) ? '#ffffff' : '#9ca3af',
+                  boxShadow: (name.trim() && email.trim() && phone.trim() && !emailError && !phoneError)
                     ? '0 10px 25px rgba(168, 85, 247, 0.25)'
                     : 'none',
-                  opacity: name.trim() ? 1 : 0.6,
+                  opacity: (name.trim() && email.trim() && phone.trim() && !emailError && !phoneError) ? 1 : 0.6,
                 }}
               >
                 {isSubmitting ? (

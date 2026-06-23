@@ -4,13 +4,11 @@ const { OpenAI } = require("openai");
  * Maps selected settings models (including futuristic mock ones)
  * to real existing OpenAI model IDs.
  */
-const mapToRealModel = (modelId) => {
+const mapToChatModel = (modelId) => {
   const mapping = {
-    "gpt-5.5": "gpt-4o",
-    "gpt-5": "gpt-4o",
-    "gpt-4.1": "gpt-4o",
-    "gpt-4o": "gpt-4o",
-    "gpt-4o-mini": "gpt-4o-mini"
+    "gpt-image-2": "gpt-4o",
+    "gpt-image-2-2026-04-21": "gpt-4o",
+    "gpt-image-1.5": "gpt-4o"
   };
   return mapping[modelId] || "gpt-4o";
 };
@@ -19,7 +17,7 @@ const mapToRealModel = (modelId) => {
  * Enhances the base template prompt using the selected OpenAI model.
  * If the OpenAI API key is missing or invalid, falls back to the base prompt.
  * 
- * @param {string} modelId - The selected model ID (e.g., 'gpt-4o-mini')
+ * @param {string} modelId - The selected model ID (e.g., 'gpt-image-2')
  * @param {string} basePrompt - The base style prompt of the selected template
  * @param {string} userName - The name of the user
  * @param {string} gender - The selected gender
@@ -35,7 +33,7 @@ const enhancePrompt = async (modelId, basePrompt, userName, gender) => {
   }
 
   try {
-    const realModel = mapToRealModel(modelId);
+    const realModel = mapToChatModel(modelId);
     console.log(`[OpenAI Service] Enhancing prompt using model: ${realModel} (selected: ${modelId})...`);
 
     const openai = new OpenAI({ apiKey });

@@ -150,11 +150,27 @@ function TemplateScreen({ gender, onSelect, onBack, apiBase }) {
                 )}
               </div>
 
+              {/* Gender Label Pill (like reference) */}
+              <div style={{
+                background: '#2d1b4e',
+                color: '#fff',
+                padding: '8px 24px',
+                borderRadius: '20px',
+                fontSize: '14px',
+                fontWeight: '800',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                marginBottom: '24px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}>
+                {gender} TEMPLATES
+              </div>
+
               {/* Grid */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: '18px', width: '100%', maxWidth: '900px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '24px', width: '100%', maxWidth: '1000px',
               }}>
                 {templates.map((tpl, idx) => {
                   const isSelected = selected?.id === tpl.id;
@@ -177,11 +193,32 @@ function TemplateScreen({ gender, onSelect, onBack, apiBase }) {
                           ? '0 16px 32px rgba(0,0,0,0.4)'
                           : '0 4px 16px rgba(0,0,0,0.3)',
                         transform: isSelected ? 'translateY(-6px) scale(1.01)' : hoveredId === tpl.id ? 'translateY(-6px)' : 'translateY(0)',
+                        position: 'relative'
                       }}
                     >
-                      {/* Preview */}
+                      {/* Name Pill (like reference) */}
                       <div style={{
-                        height: '180px', position: 'relative', overflow: 'hidden',
+                        position: 'absolute',
+                        top: '12px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: '#000',
+                        color: '#fff',
+                        padding: '6px 20px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        letterSpacing: '1px',
+                        textTransform: 'uppercase',
+                        zIndex: 10,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+                      }}>
+                        {tpl.name}
+                      </div>
+
+                      {/* Preview Image */}
+                      <div style={{
+                        aspectRatio: '1 / 1.1', position: 'relative', overflow: 'hidden',
                         background: `linear-gradient(135deg, ${g.from}, ${g.to})`,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
@@ -189,7 +226,7 @@ function TemplateScreen({ gender, onSelect, onBack, apiBase }) {
                           <img src={tpl.previewImage} alt={tpl.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease', transform: hoveredId === tpl.id ? 'scale(1.05)' : 'scale(1)' }} />
                         ) : (
                           <span style={{
-                            fontSize: '56px', lineHeight: 1,
+                            fontSize: '64px', lineHeight: 1,
                             filter: `drop-shadow(0 0 20px ${g.accent}60)`,
                             transition: 'transform 0.3s ease',
                             transform: hoveredId === tpl.id || isSelected ? 'scale(1.15)' : 'scale(1)',
@@ -206,36 +243,24 @@ function TemplateScreen({ gender, onSelect, onBack, apiBase }) {
                             background: `${g.accent}20`,
                           }}>
                             <div style={{
-                              width: '52px', height: '52px', borderRadius: '50%',
-                              background: `linear-gradient(135deg, #a855f7, #ec4899)`,
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              boxShadow: '0 8px 24px rgba(168,85,247,0.5)',
+                               width: '64px', height: '64px', borderRadius: '50%',
+                               background: `linear-gradient(135deg, #a855f7, #ec4899)`,
+                               display: 'flex', alignItems: 'center', justifyContent: 'center',
+                               boxShadow: '0 8px 24px rgba(168,85,247,0.5)',
                             }}>
-                              <span style={{ color: '#fff', fontSize: '22px', fontWeight: '900' }}>✓</span>
+                              <span style={{ color: '#fff', fontSize: '32px', fontWeight: '900' }}>✓</span>
                             </div>
                           </div>
                         )}
 
                         {/* Accent dot */}
                         <div style={{
-                          position: 'absolute', top: '12px', right: '12px',
+                          position: 'absolute', bottom: '12px', right: '12px',
                           width: '10px', height: '10px', borderRadius: '50%',
                           background: g.accent, opacity: isSelected ? 1 : 0,
                           boxShadow: `0 0 10px ${g.accent}`,
                           transition: 'opacity 0.3s ease',
                         }} />
-                      </div>
-
-                      {/* Info */}
-                      <div style={{
-                        padding: '16px 18px',
-                        background: isSelected ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.03)',
-                        transition: 'background 0.3s ease',
-                      }}>
-                        <h3 style={{ color: '#f1f5f9', fontSize: '16px', fontWeight: '700', marginBottom: '4px' }}>{tpl.name}</h3>
-                        <p style={{ color: '#64748b', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <span>🖼️</span> {tpl.backgroundName}
-                        </p>
                       </div>
                     </div>
                   );

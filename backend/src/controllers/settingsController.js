@@ -1,11 +1,9 @@
 const AppSettings = require("../models/AppSettings");
 
 const AVAILABLE_MODELS = [
-  { id: "gpt-5.5", name: "GPT-5.5", provider: "openai" },
-  { id: "gpt-5", name: "GPT-5", provider: "openai" },
-  { id: "gpt-4.1", name: "GPT-4.1", provider: "openai" },
-  { id: "gpt-4o", name: "GPT-4o", provider: "openai" },
-  { id: "gpt-4o-mini", name: "GPT-4o-mini", provider: "openai" },
+  { id: "gpt-image-2", name: "gpt-image-2", provider: "openai" },
+  { id: "gpt-image-2-2026-04-21", name: "gpt-image-2-2026-04-21", provider: "openai" },
+  { id: "gpt-image-1.5", name: "gpt-image-1.5", provider: "openai" },
 ];
 
 /**
@@ -15,7 +13,7 @@ const AVAILABLE_MODELS = [
 const getSettings = async (req, res) => {
   try {
     const modelSetting = await AppSettings.findOne({ key: "selectedModel" });
-    const selectedModel = modelSetting ? modelSetting.value : "gpt-4o";
+    const selectedModel = modelSetting ? modelSetting.value : "gpt-image-2";
 
     return res.json({
       success: true,

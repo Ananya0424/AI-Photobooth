@@ -9,7 +9,7 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: HUGGING_FACE_API_TOKEN
+      - key: OPENAI_API_KEY
         sync: false
       - key: CLOUDINARY_CLOUD_NAME
         sync: false

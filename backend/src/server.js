@@ -81,7 +81,7 @@ const startServer = async () => {
       console.log("✓ AI PhotoBooth Backend Running");
       console.log(`✓ Port: ${PORT}`);
       console.log(`✓ Environment: ${process.env.NODE_ENV || "development"}`);
-      console.log(`✓ Mock AI Mode: ${isMockMode() ? "ON (no API key)" : "OFF (using Hugging Face)"}`);
+      console.log(`✓ Mock AI Mode: ${isMockMode() ? "ON (no API key)" : "OFF (using OpenAI)"}`);
       console.log(`✓ Health: http://localhost:${PORT}/health`);
       console.log("===================================================");
       console.log("");

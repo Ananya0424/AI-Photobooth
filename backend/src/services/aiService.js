@@ -1,116 +1,105 @@
+const { OpenAI } = require("openai");
+const { Client } = require("@gradio/client");
+const fs = require("fs");
+const path = require("path");
+
 /**
- * AI Service for face-swap generation
- *
- * Supports two modes:
- * 1. MOCK MODE: When HUGGING_FACE_API_TOKEN is not set or is a placeholder,
- *    returns the source image after a simulated delay (for local development).
- * 2. REAL MODE: Uses @gradio/client to connect to a Hugging Face Space
- *    for actual face-swap processing.
+ * AI Service for image generation using OpenAI and Gradio Face Swap
  */
 
 const isMockMode = () => {
-  const token = process.env.HUGGING_FACE_API_TOKEN;
+  const apiKey = process.env.OPENAI_API_KEY;
   return (
-    !token ||
-    token === "hf_your_token_here" ||
-    token === "" ||
-    token.startsWith("hf_your_")
+    !apiKey ||
+    apiKey === "your_openai_api_key_here" ||
+    apiKey === "" ||
+    apiKey.startsWith("sk-proj-your_")
   );
 };
 
-/**
- * Generate a face-swapped image using AI
- * @param {string} sourceImageUrl - URL of the user's captured photo (source face)
- * @param {string} targetTemplateUrl - URL of the target template image (body/outfit)
- * @param {string} prompt - Text prompt describing the desired output
- * @returns {Promise<string>} URL of the generated/face-swapped image
- */
-const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt) => {
-  console.log("[AI Service] Starting face-swap generation...");
-  console.log(`[AI Service] Source image: ${sourceImageUrl}`);
-  console.log(`[AI Service] Target template: ${targetTemplateUrl}`);
+const getBlobFromImage = async (imageInput) => {
+  if (imageInput.startsWith("data:")) {
+    const res = await fetch(imageInput);
+    return await res.blob();
+  } else if (imageInput.startsWith("/assets/")) {
+    // Resolve local path from frontend/public
+    const filePath = path.join(__dirname, "../../../frontend/public", imageInput);
+    const buffer = fs.readFileSync(filePath);
+    const mime = imageInput.endsWith(".png") ? "image/png" : "image/jpeg";
+    return new Blob([buffer], { type: mime });
+  } else {
+    const res = await fetch(imageInput);
+    if (!res.ok) throw new Error(`Failed to fetch image from ${imageInput}`);
+    return await res.blob();
+  }
+};
 
-  // ===== MOCK MODE =====
+/**
+ * Generate an image using OpenAI and swap the face
+ */
+const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selectedModel) => {
+  console.log("[AI Service] Starting true face-swap generation...");
+
   if (isMockMode()) {
-    console.log("[AI Service] Running in MOCK MODE (no API token configured)");
-    console.log("[AI Service] Simulating 2-second processing delay...");
+    console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured)");
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return sourceImageUrl;
   }
 
-  // ===== REAL MODE - Hugging Face Space via @gradio/client =====
-  console.log("[AI Service] Running in REAL MODE with Hugging Face API");
-
-  const AI_TIMEOUT_MS = 60000; // 60 second timeout
-
   try {
-    const resultUrl = await Promise.race([
-      (async () => {
-        const { Client } = await import("@gradio/client");
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-        const hfToken = process.env.HUGGING_FACE_API_TOKEN;
+    // Step 1: Generate the base outfit/scene image using DALL-E 3
+    console.log("[AI Service] Generating base image with DALL-E 3...");
+    const imagePrompt = `A photorealistic, high-quality portrait of a person. ${prompt}. Ensure the person is facing forward. Do not add any text.`;
+    
+    let generatedImageUrl;
+    try {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: imagePrompt,
+        n: 1,
+        size: "1024x1024",
+      });
 
-        console.log("[AI Service] Connecting to Hugging Face Space...");
-        const client = await Client.connect("tonyassi/face-swap", {
-          hf_token: hfToken,
-        });
+      if (response && response.data && response.data[0]) {
+        generatedImageUrl = response.data[0].url || `data:image/png;base64,${response.data[0].b64_json}`;
+        console.log(`[AI Service] Base image generated successfully.`);
+      } else {
+        throw new Error("Unexpected OpenAI API response format");
+      }
+    } catch (openaiError) {
+      console.error("[AI Service] OpenAI generation failed:", openaiError.message);
+      console.log("[AI Service] Falling back to the template image as the target.");
+      generatedImageUrl = targetTemplateUrl; // Fallback to template if DALL-E fails
+    }
 
-        console.log("[AI Service] Connected to Hugging Face Space");
+    if (!generatedImageUrl) {
+      throw new Error("No target image available for face swap");
+    }
 
-        // Fetch the source and target images as blobs
-        const sourceResponse = await fetch(sourceImageUrl);
-        const sourceBlob = await sourceResponse.blob();
+    // Step 2: Swap the user's face onto the target image
+    console.log("[AI Service] Swapping face using tonyassi/face-swap...");
+    
+    const srcBlob = await getBlobFromImage(sourceImageUrl);
+    const destBlob = await getBlobFromImage(generatedImageUrl);
 
-        // Load target template from local filesystem if it's a local path
-        let targetBlob;
-        if (targetTemplateUrl.startsWith("/")) {
-          const fs = require("fs");
-          const path = require("path");
-          let filePath;
-          if (process.env.NODE_ENV === "production") {
-            filePath = path.join(__dirname, "../../../frontend/dist", targetTemplateUrl);
-          } else {
-            filePath = path.join(__dirname, "../../../frontend/public", targetTemplateUrl);
-          }
-          console.log(`[AI Service] Loading template from disk: ${filePath}`);
-          const fileBuffer = fs.readFileSync(filePath);
-          targetBlob = new Blob([fileBuffer], { type: "image/jpeg" });
-        } else {
-          console.log(`[AI Service] Fetching remote template URL: ${targetTemplateUrl}`);
-          const targetResponse = await fetch(targetTemplateUrl);
-          targetBlob = await targetResponse.blob();
-        }
+    const client = await Client.connect("tonyassi/face-swap");
+    const result = await client.predict("/swap_faces", {
+      src_img: srcBlob,
+      dest_img: destBlob
+    });
 
-        console.log("[AI Service] Sending images to face-swap API...");
+    if (result && result.data && result.data[0] && result.data[0].url) {
+      console.log("[AI Service] Face swap successful!");
+      return result.data[0].url;
+    } else {
+      throw new Error("Unexpected response from face swap API");
+    }
 
-        // Call the face-swap prediction endpoint for tonyassi
-        const predictionResult = await client.predict("/swap_faces", {
-          src_img: sourceBlob,
-          dest_img: targetBlob
-        });
-
-        console.log("[AI Service] Face-swap API response received");
-        console.log("API returned:", JSON.stringify(predictionResult, null, 2));
-
-        // Extract the result image URL
-        if (predictionResult && predictionResult.data && predictionResult.data[0]) {
-          const generatedImageUrl = predictionResult.data[0].url || predictionResult.data[0];
-          return generatedImageUrl;
-        }
-
-        throw new Error("Unexpected API response format");
-      })(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("AI generation timed out after 60 seconds")), AI_TIMEOUT_MS)
-      ),
-    ]);
-
-    console.log(`[AI Service] Generated image URL: ${resultUrl}`);
-    return resultUrl;
   } catch (error) {
-    console.error("[AI Service] Face-swap API error:", error.message);
-    console.warn("[AI Service] Falling back to source image due to API error");
-    return sourceImageUrl;
+    console.error("[AI Service] Error in generation/face-swap:", error.message);
+    throw error;
   }
 };
 

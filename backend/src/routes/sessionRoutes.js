@@ -9,6 +9,7 @@ const {
   getStatus,
   generateQR,
   getTemplates,
+  shareImage,
 } = require("../controllers/sessionController");
 
 const {
@@ -43,6 +44,9 @@ router.get("/api/sessions/:sessionId/status", getStatus);
 
 // Generate QR code for generated image
 router.get("/api/sessions/:sessionId/qr", generateQR);
+
+// Share generated image via email
+router.post("/api/sessions/:sessionId/share", shareImage);
 
 // ===== Template Routes =====
 
