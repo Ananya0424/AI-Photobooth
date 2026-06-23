@@ -116,6 +116,7 @@ function App() {
     try {
       setError('');
       setSelectedTemplate(template);
+      console.log(`[Frontend LOG] template selected: ${template.id}`);
       if (sessionId) {
         const res = await fetch(`${API_BASE}/sessions/${sessionId}/template`, {
           method: 'PATCH',
@@ -135,9 +136,11 @@ function App() {
     try {
       setError('');
       setCapturedImage(imageBase64);
+      console.log(`[Frontend LOG] image uploaded (captured), size: ${imageBase64.length}`);
       setCurrentScreen('loading');
 
       if (sessionId) {
+        console.log(`[Frontend LOG] generation request sent for session: ${sessionId}`);
         const captureRes = await fetch(`${API_BASE}/sessions/${sessionId}/capture`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -150,6 +153,7 @@ function App() {
         const maxPolls = 120; // 120 * 3s = 6 minutes max
         const pollInterval = setInterval(async () => {
           pollCount++;
+          console.log(`[Frontend LOG] Poll #${pollCount} checking status...`);
           try {
             const statusRes = await fetch(`${API_BASE}/sessions/${sessionId}/status`);
             const statusData = await statusRes.json();
@@ -157,6 +161,7 @@ function App() {
             if (statusData.status === 'completed' && statusData.generatedImageUrl) {
               clearInterval(pollInterval);
               setGeneratedImageUrl(statusData.generatedImageUrl);
+              console.log(`[Frontend LOG] generation response received: ${statusData.generatedImageUrl}`);
               setCurrentScreen('result');
             } else if (statusData.status === 'failed') {
               clearInterval(pollInterval);
@@ -186,6 +191,7 @@ function App() {
       } else {
         // Mock mode - no backend
         setTimeout(() => {
+          console.log(`[Frontend LOG] Mock mode fallback - generatedImageUrl: ${imageBase64}`);
           setGeneratedImageUrl(imageBase64);
           setCurrentScreen('result');
         }, 3000);
@@ -314,16 +320,21 @@ function App() {
           <LoadingScreen userName={userName} />
         )}
         {currentScreen === 'result' && (
-          <ResultScreen
-            generatedImageUrl={generatedImageUrl}
-            capturedImage={capturedImage}
-            onRetake={handleRetake}
-            onRestart={handleRestart}
-            onGetQR={handleGetQR}
-            userName={userName}
-            onShare={handleShareImage}
-            sessionId={sessionId}
-          />
+          (() => {
+            console.log(`[Frontend LOG] generated image rendered: ${generatedImageUrl}`);
+            return (
+              <ResultScreen
+                generatedImageUrl={generatedImageUrl}
+                capturedImage={capturedImage}
+                onRetake={handleRetake}
+                onRestart={handleRestart}
+                onGetQR={handleGetQR}
+                userName={userName}
+                onShare={handleShareImage}
+                sessionId={sessionId}
+              />
+            );
+          })()
         )}
         {currentScreen === 'settings' && (
           <SettingsScreen onBack={handleCloseSettings} apiBase={API_BASE} />

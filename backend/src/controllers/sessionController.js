@@ -183,6 +183,7 @@ const updateTemplate = async (req, res) => {
 
     await session.save();
 
+    console.log(`[Backend LOG] template selected: ${template.id} for session: ${sessionId}`);
     console.log(`[Session] ${sessionId} - Template set to: ${template.name}`);
 
     return res.json({
@@ -210,6 +211,8 @@ const captureImage = async (req, res) => {
   try {
     const { sessionId } = req.params;
     const { image } = req.body;
+
+    console.log(`[Backend LOG] image uploaded for session: ${sessionId}, base64 length: ${image ? image.length : 0}`);
 
     if (!image) {
       return res.status(400).json({
@@ -286,6 +289,7 @@ const captureImage = async (req, res) => {
     }
     session.generatedPrompt = finalPrompt;
 
+    console.log(`[Backend LOG] generation request sent for session: ${sessionId} using model: ${selectedModel}`);
     console.log(`[Session] ${sessionId} - Starting AI generation with model: ${selectedModel}...`);
 
     const genStart = Date.now();
@@ -319,6 +323,7 @@ const captureImage = async (req, res) => {
       session.status = "completed";
       await session.save();
 
+      console.log(`[Backend LOG] generation response received for session: ${sessionId}, url: ${finalUrl}`);
       console.log(`[Session] ${sessionId} - AI generation completed in ${session.generationDuration}ms: ${finalUrl.substring(0, 80)}...`);
     } catch (aiError) {
       console.error(`[Session] ${sessionId} - AI generation failed:`, aiError.message);
