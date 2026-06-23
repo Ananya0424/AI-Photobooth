@@ -43,9 +43,32 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
   console.log("[AI Service] Starting face-swap generation pipeline...");
 
   if (isMockMode()) {
-    console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured)");
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return sourceImageUrl;
+    console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured). Swapping face onto template directly...");
+    try {
+      const srcBlob = await getBlobFromImage(sourceImageUrl);
+      const destBlob = await getBlobFromImage(targetTemplateUrl);
+      const client = await Client.connect("tonyassi/face-swap");
+      const result = await client.predict("/swap_faces", {
+        src_img: srcBlob,
+        dest_img: destBlob
+      });
+      if (result && result.data && result.data[0] && result.data[0].url) {
+        const faceSwapUrl = result.data[0].url;
+        console.log("[AI Service] Mock face swap successful!");
+        try {
+          const enhancedUrl = await enhanceImage(faceSwapUrl);
+          return enhancedUrl;
+        } catch (enhanceError) {
+          console.warn("[AI Service] Mock enhancement failed, returning face swap:", enhanceError.message);
+          return faceSwapUrl;
+        }
+      } else {
+        throw new Error("Unexpected response from face swap API");
+      }
+    } catch (err) {
+      console.error("[AI Service] Mock face-swap failed:", err.message);
+      return sourceImageUrl;
+    }
   }
 
   try {
