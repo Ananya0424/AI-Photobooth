@@ -25,10 +25,8 @@ const uploadImage = async (base64String) => {
     const result = await cloudinary.uploader.upload(imageData, {
       folder: "ai-photobooth",
       resource_type: "image",
-      transformation: [
-        { width: 1024, height: 1024, crop: "limit" }, // Limit max size
-        { quality: "auto", fetch_format: "auto" }, // Auto-optimize
-      ],
+      quality: "auto:best",
+      fetch_format: "auto",
     });
 
     console.log(`[Cloudinary] Upload successful: ${result.secure_url}`);
@@ -51,10 +49,8 @@ const uploadImageFromUrl = async (imageUrl) => {
     const result = await cloudinary.uploader.upload(imageUrl, {
       folder: "ai-photobooth",
       resource_type: "image",
-      transformation: [
-        { width: 1024, height: 1024, crop: "limit" },
-        { quality: "auto", fetch_format: "auto" },
-      ],
+      quality: "auto:best",
+      fetch_format: "auto",
     });
 
     console.log(`[Cloudinary] URL upload successful: ${result.secure_url}`);

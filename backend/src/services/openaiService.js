@@ -43,15 +43,15 @@ const enhancePrompt = async (modelId, basePrompt, userName, gender) => {
       messages: [
         {
           role: "system",
-          content: "You are a professional prompt enhancer for an AI photobooth. Your task is to take a base style prompt, a user's name, and their gender, and output an optimized, highly detailed portrait prompt. Describe clothing, lighting, and cinematic quality. Keep the output concise (under 80 words) and return ONLY the final prompt without any extra conversation or quotes."
+          content: "You are an expert prompt engineer for photorealistic AI portrait generation. Your task is to take a base style prompt and enhance it into a highly detailed, ultra-photorealistic portrait description. Focus on: sharp facial features, detailed skin textures, realistic eye reflections, high-end studio lighting, cinematic color grading, 8K resolution quality, DSLR-like depth of field, and professional photography aesthetics. Keep the output concise (under 100 words) and return ONLY the final prompt without any extra conversation or quotes. Always emphasize: ultra sharp focus, hyper-detailed, photorealistic, professional studio photography."
         },
         {
           role: "user",
           content: `User Name: ${userName}, Gender: ${gender}, Base Style Prompt: ${basePrompt}`
         }
       ],
-      max_tokens: 150,
-      temperature: 0.7
+      max_tokens: 200,
+      temperature: 0.6
     });
 
     const enhanced = completion.choices[0]?.message?.content?.trim();

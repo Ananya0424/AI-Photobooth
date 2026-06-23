@@ -2,9 +2,11 @@ const { OpenAI } = require("openai");
 const { Client } = require("@gradio/client");
 const fs = require("fs");
 const path = require("path");
+const { enhanceImage } = require("./imageEnhancer");
 
 /**
  * AI Service for image generation using OpenAI and Gradio Face Swap
+ * Pipeline: Template Image → Face Swap → Face Restoration → Upload
  */
 
 const isMockMode = () => {
@@ -35,10 +37,10 @@ const getBlobFromImage = async (imageInput) => {
 };
 
 /**
- * Generate an image using OpenAI and swap the face
+ * Generate an image using OpenAI and swap the face, then enhance quality
  */
 const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selectedModel) => {
-  console.log("[AI Service] Starting true face-swap generation...");
+  console.log("[AI Service] Starting face-swap generation pipeline...");
 
   if (isMockMode()) {
     console.log("[AI Service] Running in MOCK MODE (no OpenAI API key configured)");
@@ -51,7 +53,7 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
 
     // Step 1: Generate the base outfit/scene image using DALL-E 3
     console.log("[AI Service] Generating base image with DALL-E 3...");
-    const imagePrompt = `A photorealistic, high-quality portrait of a person. ${prompt}. Ensure the person is facing forward. Do not add any text.`;
+    const imagePrompt = `A photorealistic, ultra high-quality, 8K professional portrait photograph of a person. ${prompt}. The person is facing slightly forward with sharp focus on the face. Ultra-detailed skin texture, sharp eyes, realistic lighting. Studio quality photography. Do not add any text or watermarks.`;
     
     let generatedImageUrl;
     try {
@@ -60,11 +62,13 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
         prompt: imagePrompt,
         n: 1,
         size: "1024x1024",
+        quality: "hd",        // Use HD quality mode
+        style: "natural",     // Natural style for photorealism
       });
 
       if (response && response.data && response.data[0]) {
         generatedImageUrl = response.data[0].url || `data:image/png;base64,${response.data[0].b64_json}`;
-        console.log(`[AI Service] Base image generated successfully.`);
+        console.log(`[AI Service] Base image generated successfully (HD quality).`);
       } else {
         throw new Error("Unexpected OpenAI API response format");
       }
@@ -90,11 +94,23 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
       dest_img: destBlob
     });
 
+    let faceSwapUrl;
     if (result && result.data && result.data[0] && result.data[0].url) {
+      faceSwapUrl = result.data[0].url;
       console.log("[AI Service] Face swap successful!");
-      return result.data[0].url;
     } else {
       throw new Error("Unexpected response from face swap API");
+    }
+
+    // Step 3: Enhance the face-swapped image (face restoration + upscaling)
+    console.log("[AI Service] Enhancing image quality (face restoration + upscaling)...");
+    try {
+      const enhancedUrl = await enhanceImage(faceSwapUrl);
+      console.log("[AI Service] Image enhancement completed successfully!");
+      return enhancedUrl;
+    } catch (enhanceError) {
+      console.warn("[AI Service] Enhancement failed, returning face-swapped image:", enhanceError.message);
+      return faceSwapUrl; // Return unenhanced face swap if enhancement fails
     }
 
   } catch (error) {
