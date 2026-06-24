@@ -31,12 +31,13 @@ function LandingPage({ onStart }) {
 
         /* PORTRAIT-FIRST CONTAINER */
         .lp-container {
-          min-height: 100vh;
-          min-height: 100dvh;
+          height: 100vh;
+          height: 100dvh;
           position: relative;
           display: flex;
           flex-direction: column;
-          overflow-x: hidden;
+          justify-content: space-between;
+          overflow: hidden;
           width: 100%;
           background-color: #07040e;
         }
@@ -75,16 +76,18 @@ function LandingPage({ onStart }) {
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 20px 20px;
+          padding: 2.2vh 32px;
           background: rgba(7,4,14,0.5);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
           border-bottom: 1px solid rgba(255,255,255,0.05);
+          height: 7.5vh;
+          min-height: 60px;
         }
 
         .lp-logo {
           font-family: 'Outfit', sans-serif;
-          font-size: 22px;
+          font-size: clamp(20px, 2.8vh, 32px);
           font-weight: 800;
           color: white;
           text-decoration: none;
@@ -104,22 +107,22 @@ function LandingPage({ onStart }) {
         /* Gallery Link */
         .lp-nav-gallery {
           position: absolute;
-          right: 16px;
+          right: 24px;
           background: rgba(255,255,255,0.06);
           border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 10px;
-          padding: 8px 16px;
+          border-radius: 12px;
+          padding: 1vh 2vh;
           color: #cbd5e1;
-          font-size: 12px;
+          font-size: clamp(11px, 1.6vh, 16px);
           font-weight: 700;
           letter-spacing: 0.8px;
           cursor: pointer;
           transition: all 0.3s ease;
           text-transform: uppercase;
-          min-height: 38px;
+          min-height: 4.2vh;
           display: flex;
           align-items: center;
-          gap: 5px;
+          gap: 6px;
           -webkit-tap-highlight-color: transparent;
         }
         .lp-nav-gallery:hover {
@@ -128,34 +131,34 @@ function LandingPage({ onStart }) {
           border-color: rgba(168,85,247,0.3);
         }
 
-        /* HERO SECTION - left-aligned, portrait optimised */
+        /* HERO SECTION - left-aligned, height-first portrait */
         .lp-hero {
           position: relative;
           z-index: 10;
-          padding: 36px 24px 20px;
+          padding: 6vh 48px 3vh;
           text-align: left;
-          /* give enough vertical space so the bg astronaut is visible */
-          min-height: 52vh;
+          flex: 1;
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
+          justify-content: center;
+          min-height: 48vh;
         }
 
         .lp-hero-title {
           font-family: 'Outfit', sans-serif;
-          font-size: clamp(44px, 12vw, 62px);
+          font-size: clamp(36px, 5.2vh, 88px);
           font-weight: 900;
           line-height: 1.05;
           margin: 0;
           text-transform: uppercase;
           letter-spacing: -0.5px;
           text-shadow: 0 4px 24px rgba(0,0,0,0.5);
-          max-width: 480px;
+          max-width: 580px;
         }
 
         .lp-hero-line {
           display: block;
-          margin-bottom: 2px;
+          margin-bottom: 0.5vh;
         }
 
         .lp-gradient-text {
@@ -167,11 +170,11 @@ function LandingPage({ onStart }) {
         }
 
         .lp-hero-desc {
-          margin-top: 18px;
-          font-size: 16px;
+          margin-top: 3vh;
+          font-size: clamp(14px, 2vh, 22px);
           color: #94a3b8;
           line-height: 1.6;
-          max-width: 320px;
+          max-width: 440px;
           letter-spacing: 0.2px;
         }
 
@@ -179,11 +182,13 @@ function LandingPage({ onStart }) {
         .lp-gallery-section {
           position: relative;
           z-index: 10;
-          padding: 28px 0;
+          padding: 3.5vh 0;
           overflow: hidden;
           background: rgba(0,0,0,0.25);
           border-top: 1px solid rgba(255,255,255,0.05);
           border-bottom: 1px solid rgba(255,255,255,0.05);
+          display: flex;
+          align-items: center;
         }
 
         @keyframes scrollMarquee {
@@ -204,15 +209,15 @@ function LandingPage({ onStart }) {
         }
 
         .lp-gallery-card {
-          border-radius: 16px;
+          border-radius: 18px;
           overflow: hidden;
-          width: 215px;
-          height: 290px;
+          width: clamp(160px, 14.5vh, 260px);
+          height: clamp(215px, 19.5vh, 350px);
           flex-shrink: 0;
           border: 1.5px solid rgba(255,255,255,0.1);
           transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
           background: linear-gradient(135deg, #0a0612 0%, #1a0f2e 100%);
-          margin-right: 16px;
+          margin-right: 2.2vh;
           cursor: pointer;
           box-shadow: 0 8px 28px rgba(0,0,0,0.35);
           position: relative;
@@ -224,16 +229,16 @@ function LandingPage({ onStart }) {
           bottom: 0;
           left: 0;
           right: 0;
-          height: 60px;
+          height: 6vh;
           background: linear-gradient(to top, rgba(10,6,18,0.7), transparent);
           pointer-events: none;
-          border-radius: 0 0 16px 16px;
+          border-radius: 0 0 18px 18px;
         }
 
         .lp-gallery-card:hover {
-          transform: translateY(-6px) scale(1.02);
+          transform: translateY(-0.8vh) scale(1.02);
           border-color: rgba(168, 85, 247, 0.5);
-          box-shadow: 0 16px 44px rgba(147, 51, 234, 0.35);
+          box-shadow: 0 1.5vh 4vh rgba(147, 51, 234, 0.35);
         }
 
         .lp-gallery-card img {
@@ -251,31 +256,31 @@ function LandingPage({ onStart }) {
           display: flex;
           justify-content: center;
           align-items: center;
-          padding: 24px 20px 40px;
+          padding: 4vh 32px 5vh;
           flex-direction: column;
-          gap: 14px;
+          gap: 2.2vh;
         }
 
         .lp-btn-start {
           background: linear-gradient(135deg, #6366f1 0%, #9333ea 45%, #db2777 100%);
           border: none;
           border-radius: 50px;
-          padding: 18px 60px;
+          padding: 2.2vh 6.5vh;
           color: white;
-          font-size: 18px;
+          font-size: clamp(16px, 2.2vh, 26px);
           font-weight: 800;
           letter-spacing: 1.5px;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
+          gap: 1.5vh;
           cursor: pointer;
           transition: all 0.3s ease;
           box-shadow: 0 12px 36px rgba(147, 51, 234, 0.45);
           white-space: nowrap;
           width: 100%;
-          max-width: 340px;
-          min-height: 62px;
+          max-width: clamp(280px, 35vh, 480px);
+          min-height: clamp(56px, 6.5vh, 88px);
           font-family: 'Outfit', sans-serif;
           text-transform: uppercase;
           position: relative;
@@ -303,13 +308,13 @@ function LandingPage({ onStart }) {
         }
 
         .lp-btn-start:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 20px 52px rgba(219, 39, 119, 0.5);
+          transform: translateY(-0.4vh);
+          box-shadow: 0 2.5vh 6vh rgba(219, 39, 119, 0.5);
         }
 
         .lp-btn-icon {
-          width: 20px;
-          height: 20px;
+          width: clamp(18px, 2.2vh, 26px);
+          height: clamp(18px, 2.2vh, 26px);
         }
 
         /* FOOTER */
@@ -317,128 +322,20 @@ function LandingPage({ onStart }) {
           position: relative;
           z-index: 10;
           text-align: center;
-          padding: 0 20px 24px;
+          padding: 0 20px 2.5vh;
           color: #334155;
           font-size: 11px;
           letter-spacing: 0.5px;
         }
 
-        /* ================================ */
-        /* PORTRAIT-FIRST RESPONSIVE DESIGN */
-        /* ================================ */
-
-        /* Standard portrait tablet (e.g., iPad) */
-        @media (max-width: 768px) {
-          .lp-nav {
-            padding: 18px 16px;
-          }
-
-          .lp-logo {
-            font-size: 20px;
-          }
-
-          .lp-hero {
-            padding: 30px 20px 16px;
-            min-height: 48vh;
-          }
-
-          .lp-hero-title {
-            font-size: clamp(40px, 11vw, 54px);
-          }
-
-          .lp-hero-desc {
-            font-size: 15px;
-          }
-
-          .lp-gallery-card {
-            width: 195px;
-            height: 265px;
-            margin-right: 14px;
-          }
-
-          .lp-cta-wrapper {
-            padding: 20px 16px 36px;
-          }
-
-          .lp-btn-start {
-            padding: 16px 48px;
-            font-size: 17px;
-            max-width: 300px;
-            min-height: 58px;
-          }
-        }
-
-        /* Smaller phones */
-        @media (max-width: 480px) {
-          .lp-nav {
-            padding: 16px 12px;
-          }
-
-          .lp-logo {
-            font-size: 18px;
-            letter-spacing: 1px;
-          }
-
-          .lp-nav-gallery {
-            font-size: 11px;
-            padding: 7px 12px;
-            right: 12px;
-          }
-
-          .lp-hero {
-            padding: 24px 16px 14px;
-            min-height: 44vh;
-          }
-
-          .lp-hero-title {
-            font-size: clamp(34px, 10vw, 46px);
-            line-height: 1.08;
-          }
-
-          .lp-hero-desc {
-            font-size: 14px;
-            margin-top: 14px;
-            max-width: 280px;
-          }
-
-          .lp-gallery-section {
-            padding: 20px 0;
-          }
-
-          .lp-gallery-card {
-            width: 175px;
-            height: 240px;
-            margin-right: 12px;
-            border-radius: 14px;
-          }
-
-          .lp-cta-wrapper {
-            padding: 18px 12px 32px;
-            gap: 12px;
-          }
-
-          .lp-btn-start {
-            padding: 15px 40px;
-            font-size: 16px;
-            max-width: 270px;
-            min-height: 54px;
-          }
-        }
-
-        /* Very small phones */
-        @media (max-width: 380px) {
-          .lp-hero-title {
-            font-size: clamp(30px, 9vw, 40px);
-          }
-
-          .lp-gallery-card {
-            width: 155px;
-            height: 215px;
-          }
-        }
-
         /* LANDSCAPE FALLBACK */
         @media (orientation: landscape) and (max-height: 600px) {
+          .lp-container {
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
+          }
+
           .lp-hero {
             padding: 14px 20px 10px;
             min-height: auto;
@@ -478,13 +375,13 @@ function LandingPage({ onStart }) {
         /* Touch Device Optimizations */
         @supports (padding: max(0px)) {
           .lp-nav {
-            padding-top: max(16px, env(safe-area-inset-top));
-            padding-left: max(16px, env(safe-area-inset-left));
-            padding-right: max(16px, env(safe-area-inset-right));
+            padding-top: max(2.2vh, env(safe-area-inset-top));
+            padding-left: max(32px, env(safe-area-inset-left));
+            padding-right: max(32px, env(safe-area-inset-right));
           }
 
           .lp-cta-wrapper {
-            padding-bottom: max(36px, env(safe-area-inset-bottom));
+            padding-bottom: max(5vh, env(safe-area-inset-bottom));
           }
         }
 
