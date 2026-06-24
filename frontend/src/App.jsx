@@ -320,10 +320,11 @@ function PhotoboothFlow() {
             onCapture={handleCapture}
             onBack={() => goBack('template')}
             userName={userName}
+            selectedTemplate={selectedTemplate}
           />
         )}
         {currentScreen === 'loading' && (
-          <LoadingScreen userName={userName} />
+          <LoadingScreen userName={userName} templateName={selectedTemplate} />
         )}
         {currentScreen === 'result' && (
           (() => {

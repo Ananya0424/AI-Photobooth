@@ -83,6 +83,120 @@ const TEMPLATE_LOADING = {
       { text: 'Heroes remind us that anyone can choose to make a difference.', emoji: '🌟' },
     ],
   },
+  doctor: {
+    title: 'The Art of Healing',
+    emoji: '🩺',
+    color: '#10b981',
+    messages: [
+      { text: 'Doctors dedicate their lives to healing others.', emoji: '🩺' },
+      { text: 'Medicine combines science, compassion, and skill.', emoji: '💊' },
+      { text: 'Every patient interaction is an opportunity to make a difference.', emoji: '❤️' },
+      { text: 'Doctors spend over a decade training before they practice.', emoji: '📚' },
+      { text: 'The human body is one of nature\'s greatest marvels.', emoji: '🧬' },
+      { text: 'Prevention is just as important as treatment.', emoji: '🛡️' },
+      { text: 'Doctors work tirelessly to stay current with medical advances.', emoji: '🔬' },
+      { text: 'Listening carefully to patients is a doctor\'s superpower.', emoji: '👂' },
+      { text: 'Modern medicine has extended human life expectancy dramatically.', emoji: '📈' },
+      { text: 'Teamwork between doctors and nurses saves countless lives.', emoji: '🤝' },
+      { text: 'A good diagnosis is the first step toward recovery.', emoji: '🔍' },
+      { text: 'Doctors balance knowledge with empathy every single day.', emoji: '⚖️' },
+      { text: 'Medical research turns today\'s mysteries into tomorrow\'s cures.', emoji: '🧪' },
+      { text: 'Emergency doctors make life-saving decisions in seconds.', emoji: '⚡' },
+      { text: 'The Hippocratic oath has guided medicine for thousands of years.', emoji: '📜' },
+    ],
+  },
+  chef: {
+    title: 'The Master of Flavors',
+    emoji: '👨‍🍳',
+    color: '#f97316',
+    messages: [
+      { text: 'Great chefs turn ingredients into unforgettable experiences.', emoji: '👨‍🍳' },
+      { text: 'Cooking is both a science and an art form.', emoji: '🎨' },
+      { text: 'Every dish tells a story about culture and tradition.', emoji: '📖' },
+      { text: 'The finest chefs train for years to perfect their craft.', emoji: '📚' },
+      { text: 'Fresh ingredients are the foundation of every great meal.', emoji: '🥬' },
+      { text: 'A chef\'s kitchen is their canvas.', emoji: '🍽️' },
+      { text: 'Seasoning is the difference between good and extraordinary.', emoji: '🧂' },
+      { text: 'World-class cuisine brings people together across cultures.', emoji: '🌍' },
+      { text: 'Patience and precision are a chef\'s most valuable tools.', emoji: '⏱️' },
+      { text: 'Michelin-starred chefs reinvent the same dish hundreds of times.', emoji: '⭐' },
+      { text: 'Food has the power to evoke memories and emotions.', emoji: '❤️' },
+      { text: 'The best meals are made with passion as the secret ingredient.', emoji: '🔥' },
+      { text: 'A chef never stops learning — every cuisine is a new lesson.', emoji: '🧠' },
+      { text: 'Presentation transforms a dish into a work of art.', emoji: '✨' },
+      { text: 'Cooking for others is one of the purest acts of care.', emoji: '🤍' },
+    ],
+  },
+  bride: {
+    title: 'A Day to Remember',
+    emoji: '💍',
+    color: '#ec4899',
+    messages: [
+      { text: 'A wedding day is one of life\'s most magical moments.', emoji: '💍' },
+      { text: 'Every detail is thoughtfully chosen to create a perfect memory.', emoji: '✨' },
+      { text: 'Love is the most beautiful reason to celebrate.', emoji: '❤️' },
+      { text: 'Bridal traditions carry centuries of joy and meaning.', emoji: '📜' },
+      { text: 'The journey to this moment is filled with love and laughter.', emoji: '😊' },
+      { text: 'A bride\'s glow comes from the happiness within.', emoji: '🌟' },
+      { text: 'Every love story is unique and worth celebrating.', emoji: '📖' },
+      { text: 'The best weddings reflect the couple\'s true personalities.', emoji: '🎊' },
+      { text: 'Family and friends make every celebration complete.', emoji: '👨‍👩‍👧‍👦' },
+      { text: 'Flowers, vows, and love — the three pillars of a wedding.', emoji: '💐' },
+      { text: 'Today marks the beginning of a beautiful new chapter.', emoji: '🦋' },
+      { text: 'Two hearts becoming one — the greatest partnership.', emoji: '💑' },
+      { text: 'Even the smallest wedding moments become lifelong treasures.', emoji: '📸' },
+      { text: 'Saying "I do" is a promise that echoes through a lifetime.', emoji: '🕊️' },
+      { text: 'The best is always yet to come for those who love deeply.', emoji: '🌅' },
+    ],
+  },
+};
+
+// ─── Alias map ───────────────────────────────────────────────────────────────
+// Maps every possible name/id/title fragment → a TEMPLATE_LOADING key.
+// Add new entries here whenever the backend adds a template whose name doesn't
+// already contain an existing key as a substring.
+const TEMPLATE_ALIASES = {
+  // king / royal
+  'royal': 'king',
+  'palace': 'king',
+  'crown': 'king',
+  'queen': 'king',  // fallback — queen shares the royal theme
+
+  // astronaut / space
+  'space': 'astronaut',
+  'galaxy': 'astronaut',
+  'cosmic': 'astronaut',
+  'universe': 'astronaut',
+  'star': 'astronaut',
+
+  // avenger / superhero
+  'superhero': 'avenger',
+  'hero': 'avenger',
+  'marvel': 'avenger',
+  'super': 'avenger',
+
+  // doctor / medical
+  'doctor': 'doctor',
+  'medical': 'doctor',
+  'nurse': 'doctor',
+  'hospital': 'doctor',
+  'health': 'doctor',
+  'dr ': 'doctor',
+
+  // chef / food
+  'chef': 'chef',
+  'cook': 'chef',
+  'kitchen': 'chef',
+  'food': 'chef',
+  'restaurant': 'chef',
+  'culinary': 'chef',
+
+  // bride / wedding
+  'bride': 'bride',
+  'wedding': 'bride',
+  'bridal': 'bride',
+  'groom': 'bride',
+  'marriage': 'bride',
 };
 
 const DEFAULT_LOADING = {
@@ -98,35 +212,82 @@ const DEFAULT_LOADING = {
   ],
 };
 
-// Pulls a usable "name" out of templateName regardless of whether the caller passed
-// a plain string ("King") or the full template object ({ id, name, prompt, ... })
-// that TemplateScreen's onSelect hands off. This makes the lookup resilient to
-// whichever shape the parent component is currently forwarding.
+// Collects every candidate string from the template prop regardless of its shape:
+//   - plain string:  "Doctor"  →  ["doctor"]
+//   - object:        { id: "doctor_male", name: "Doctor", backgroundName: "Hospital", prompt: "..." }
+//                   →  ["doctor_male", "doctor", "hospital", ...]
+// Returns an array of lower-cased, trimmed strings to try in order.
+function extractCandidates(templateName) {
+  if (!templateName) return [];
+  if (typeof templateName === 'string') return [templateName.toLowerCase().trim()];
+  if (typeof templateName === 'object') {
+    return [
+      templateName.id,
+      templateName.name,
+      templateName.title,
+      templateName.key,
+      templateName.backgroundName,
+      templateName.prompt,
+    ]
+      .filter(Boolean)
+      .map((v) => String(v).toLowerCase().trim())
+      .filter((v) => v.length > 0);
+  }
+  return [];
+}
+
+// Stable single-string key for React dependency arrays.
+// Uses the template id when available (most stable), otherwise the name.
 function extractTemplateKey(templateName) {
   if (!templateName) return '';
   if (typeof templateName === 'string') return templateName.toLowerCase().trim();
   if (typeof templateName === 'object') {
-    const candidate = templateName.name || templateName.title || templateName.prompt || '';
-    return String(candidate).toLowerCase().trim();
+    const stable = templateName.id || templateName.name || templateName.title || templateName.key || '';
+    return String(stable).toLowerCase().trim();
   }
   return '';
 }
 
+// Resolves a candidate string → a TEMPLATE_LOADING key via:
+//   1. Direct key match          ("astronaut" → "astronaut")
+//   2. Alias map match           ("royal"     → "king")
+//   3. Substring key match       ("royal_king"  contains "king" → "king")
+//   4. Substring alias match     ("royal_palace" contains "royal" → alias → "king")
+function resolveKey(candidate) {
+  if (!candidate) return '';
+
+  // 1. Direct match
+  if (TEMPLATE_LOADING[candidate]) return candidate;
+
+  // 2. Exact alias match
+  if (TEMPLATE_ALIASES[candidate]) return TEMPLATE_ALIASES[candidate];
+
+  // 3. Substring: does the candidate string contain a direct TEMPLATE_LOADING key?
+  const directKey = Object.keys(TEMPLATE_LOADING).find((k) => candidate.includes(k));
+  if (directKey) return directKey;
+
+  // 4. Substring: does the candidate string contain an alias key?
+  const aliasKey = Object.keys(TEMPLATE_ALIASES).find((a) => candidate.includes(a));
+  if (aliasKey) return TEMPLATE_ALIASES[aliasKey];
+
+  return '';
+}
+
 function getTemplateConfig(templateName) {
-  const rawKey = extractTemplateKey(templateName);
-  // Exact match first, then fall back to substring match (handles cases like
-  // "Royal King" or "King Template" that contain the key but aren't an exact match).
-  let matchedKey = TEMPLATE_LOADING[rawKey] ? rawKey : '';
-  if (!matchedKey && rawKey) {
-    matchedKey = Object.keys(TEMPLATE_LOADING).find((k) => rawKey.includes(k)) || '';
+  const candidates = extractCandidates(templateName);
+  let matchedKey = '';
+  for (const c of candidates) {
+    matchedKey = resolveKey(c);
+    if (matchedKey) break;
   }
+
   const config = (matchedKey && TEMPLATE_LOADING[matchedKey]) || DEFAULT_LOADING;
 
-  // Debug logging — trace exactly what arrived, what key we derived from it, and what matched.
+  // Debug logging
   console.log('🟣 [LoadingScreen] Raw templateName prop received:', templateName);
-  console.log('🟣 [LoadingScreen] Normalized lookup key:', rawKey);
-  console.log('🟣 [LoadingScreen] Matched template key:', matchedKey || '(none)');
-  console.log('🟣 [LoadingScreen] Loading Config in use:', config === DEFAULT_LOADING ? 'DEFAULT_LOADING (no match found — check what is being passed in!)' : matchedKey);
+  console.log('🟣 [LoadingScreen] Candidates evaluated:', candidates);
+  console.log('🟣 [LoadingScreen] Matched template key:', matchedKey || '(none — using DEFAULT_LOADING)');
+  console.log('🟣 [LoadingScreen] Config title in use:', config.title);
 
   return config;
 }
@@ -143,11 +304,18 @@ function LoadingScreen({ userName, templateName }) {
   useEffect(() => {
     console.log('🟣 [LoadingScreen] templateName prop (raw):', templateName);
     console.log('🟣 [LoadingScreen] stableKey derived:', stableKey);
+    console.log('🟣 [LoadingScreen] All candidates tried:', extractCandidates(templateName));
     console.log('🟣 [LoadingScreen] Loading Config in use:', config);
     if (!stableKey) {
-      console.warn('⚠️ [LoadingScreen] No usable template name/key found in the templateName prop — check what the parent component is passing in. Falling back to DEFAULT_LOADING.');
-    } else if (config.title === DEFAULT_LOADING.title) {
-      console.warn('⚠️ [LoadingScreen] stableKey was "' + stableKey + '" but it did not match king/astronaut/avenger — check spelling/casing coming from the parent.');
+      console.warn(
+        '⚠️ [LoadingScreen] templateName prop is null/undefined — App.jsx is not passing selectedTemplate. ' +
+        'Check that <LoadingScreen templateName={selectedTemplate} ... /> is in App.jsx.'
+      );
+    } else if (config === DEFAULT_LOADING) {
+      console.warn(
+        '⚠️ [LoadingScreen] stableKey was "' + stableKey + '" but did not match any template key or alias. ' +
+        'Add an entry to TEMPLATE_ALIASES in LoadingScreen.jsx for this template name/id.'
+      );
     }
   }, [stableKey]);
 
