@@ -128,12 +128,17 @@ function LandingPage({ onStart }) {
           border-color: rgba(168,85,247,0.3);
         }
 
-        /* HERO SECTION - PORTRAIT OPTIMIZED */
+        /* HERO SECTION - left-aligned, portrait optimised */
         .lp-hero {
           position: relative;
           z-index: 10;
           padding: 36px 24px 20px;
-          text-align: center;
+          text-align: left;
+          /* give enough vertical space so the bg astronaut is visible */
+          min-height: 52vh;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-start;
         }
 
         .lp-hero-title {
@@ -141,7 +146,7 @@ function LandingPage({ onStart }) {
           font-size: clamp(44px, 12vw, 62px);
           font-weight: 900;
           line-height: 1.05;
-          margin: 0 auto;
+          margin: 0;
           text-transform: uppercase;
           letter-spacing: -0.5px;
           text-shadow: 0 4px 24px rgba(0,0,0,0.5);
@@ -166,78 +171,19 @@ function LandingPage({ onStart }) {
           font-size: 16px;
           color: #94a3b8;
           line-height: 1.6;
-          max-width: 340px;
-          margin-left: auto;
-          margin-right: auto;
+          max-width: 320px;
           letter-spacing: 0.2px;
         }
 
-        /* ASTRONAUT VISUAL SECTION */
-        .lp-visual-section {
-          position: relative;
-          z-index: 10;
-          flex: 1;
-          display: flex;
-          align-items: flex-start;
-          justify-content: center;
-          padding: 10px 16px 16px;
-          min-height: 320px;
-        }
-
-        .lp-astronaut-container {
-          position: relative;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-
-        /* Glow behind astronaut */
-        .lp-astronaut-glow {
-          position: absolute;
-          width: 280px;
-          height: 280px;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.1) 40%, transparent 70%);
-          filter: blur(40px);
-          pointer-events: none;
-        }
-
-        .lp-astronaut-img {
-          position: relative;
-          max-width: 100%;
-          height: auto;
-          max-height: 440px;
-          object-fit: contain;
-          object-position: center top;
-          filter: drop-shadow(0 10px 40px rgba(147, 51, 234, 0.35));
-          animation: lpFloatAstronaut 4s ease-in-out infinite;
-        }
-
-        @keyframes lpFloatAstronaut {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-12px); }
-        }
-
-        /* CHARACTER PREVIEW CAROUSEL - ENLARGED */
+        /* CHARACTER PREVIEW CAROUSEL */
         .lp-gallery-section {
           position: relative;
           z-index: 10;
-          padding: 24px 0;
+          padding: 28px 0;
           overflow: hidden;
           background: rgba(0,0,0,0.25);
           border-top: 1px solid rgba(255,255,255,0.05);
           border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        .lp-gallery-label {
-          text-align: center;
-          font-family: 'Outfit', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          text-transform: uppercase;
-          color: #64748b;
-          margin-bottom: 16px;
         }
 
         @keyframes scrollMarquee {
@@ -393,6 +339,7 @@ function LandingPage({ onStart }) {
 
           .lp-hero {
             padding: 30px 20px 16px;
+            min-height: 48vh;
           }
 
           .lp-hero-title {
@@ -401,15 +348,6 @@ function LandingPage({ onStart }) {
 
           .lp-hero-desc {
             font-size: 15px;
-          }
-
-          .lp-visual-section {
-            min-height: 280px;
-            padding: 8px 16px 12px;
-          }
-
-          .lp-astronaut-img {
-            max-height: 400px;
           }
 
           .lp-gallery-card {
@@ -449,6 +387,7 @@ function LandingPage({ onStart }) {
 
           .lp-hero {
             padding: 24px 16px 14px;
+            min-height: 44vh;
           }
 
           .lp-hero-title {
@@ -459,25 +398,11 @@ function LandingPage({ onStart }) {
           .lp-hero-desc {
             font-size: 14px;
             margin-top: 14px;
-            max-width: 300px;
-          }
-
-          .lp-visual-section {
-            min-height: 240px;
-            padding: 6px 12px 10px;
-          }
-
-          .lp-astronaut-img {
-            max-height: 340px;
-          }
-
-          .lp-astronaut-glow {
-            width: 220px;
-            height: 220px;
+            max-width: 280px;
           }
 
           .lp-gallery-section {
-            padding: 18px 0;
+            padding: 20px 0;
           }
 
           .lp-gallery-card {
@@ -506,10 +431,6 @@ function LandingPage({ onStart }) {
             font-size: clamp(30px, 9vw, 40px);
           }
 
-          .lp-astronaut-img {
-            max-height: 280px;
-          }
-
           .lp-gallery-card {
             width: 155px;
             height: 215px;
@@ -520,6 +441,7 @@ function LandingPage({ onStart }) {
         @media (orientation: landscape) and (max-height: 600px) {
           .lp-hero {
             padding: 14px 20px 10px;
+            min-height: auto;
           }
 
           .lp-hero-title {
@@ -529,15 +451,6 @@ function LandingPage({ onStart }) {
           .lp-hero-desc {
             font-size: 12px;
             display: none;
-          }
-
-          .lp-visual-section {
-            min-height: 140px;
-            padding: 6px;
-          }
-
-          .lp-astronaut-img {
-            max-height: 170px;
           }
 
           .lp-gallery-section {
@@ -620,22 +533,9 @@ function LandingPage({ onStart }) {
           </p>
         </div>
 
-        {/* Astronaut Visual Section */}
-        <div className="lp-visual-section">
-          <div className="lp-astronaut-container">
-            <div className="lp-astronaut-glow" />
-            <img
-              src="/assets/images/astronaut.png"
-              alt="AI Photo Booth Astronaut"
-              className="lp-astronaut-img"
-              onError={(e) => e.target.src = '/assets/templates/male_astronaut.jpg'}
-            />
-          </div>
-        </div>
 
         {/* Character Preview Carousel */}
         <div className="lp-gallery-section">
-          <div className="lp-gallery-label">Choose Your Character</div>
           <div className="lp-gallery-grid">
             {[...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems].map((item, idx) => (
               <div key={idx} className="lp-gallery-card">
@@ -656,10 +556,7 @@ function LandingPage({ onStart }) {
           </button>
         </div>
 
-        {/* Footer */}
-        <div className="lp-footer">
-          ✦ Powered by AI • Premium Experience ✦
-        </div>
+
       </div>
     </>
   );
