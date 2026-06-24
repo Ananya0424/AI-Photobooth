@@ -3,18 +3,30 @@ import { useState, useEffect, useMemo } from 'react';
 // Template-based loading content
 const TEMPLATE_LOADING = {
   king: {
-    title: 'Your Royal Transformation Has Begun',
+    title: 'The Journey of a King',
     emoji: '👑',
     color: '#f59e0b',
     messages: [
-      { text: 'The royal crown is being crafted...', emoji: '👑' },
-      { text: 'Preparing your throne...', emoji: '🏰' },
-      { text: 'A king deserves perfection...', emoji: '✨' },
-      { text: 'Adding legendary royal details...', emoji: '⚔️' },
-      { text: 'Your kingdom awaits its ruler...', emoji: '🏯' },
-      { text: 'Forging a portrait fit for royalty...', emoji: '🛡️' },
-      { text: 'Power, prestige, and glory are loading...', emoji: '🌟' },
-      { text: 'Preparing your grand royal entrance...', emoji: '🎺' },
+      { text: 'A king is the protector and leader of a kingdom.', emoji: '🛡️' },
+      { text: 'Great kings are remembered for their wisdom, courage, and leadership.', emoji: '👑' },
+      { text: 'Kings were responsible for making important decisions for their people.', emoji: '📜' },
+      { text: 'A powerful king earned respect through justice, not fear.', emoji: '⚖️' },
+      { text: 'Throughout history, legendary kings built great civilizations.', emoji: '🏛️' },
+      { text: "A king's duty was to protect his kingdom during peace and war.", emoji: '⚔️' },
+      { text: 'Strong leadership often determines the success of a kingdom.', emoji: '🏰' },
+      { text: 'Many kings spent years learning strategy and governance.', emoji: '📚' },
+      { text: 'A wise king listens to his advisors but makes the final decision.', emoji: '🧠' },
+      { text: 'The crown symbolizes responsibility as much as power.', emoji: '👑' },
+      { text: 'History remembers kings who served their people well.', emoji: '📖' },
+      { text: 'Every great kingdom once had a visionary ruler.', emoji: '🌟' },
+      { text: 'Royal courts were centers of art, culture, and diplomacy.', emoji: '🎭' },
+      { text: 'A throne carries the weight of an entire nation.', emoji: '🪑' },
+      { text: 'Kings often led their armies personally into battle.', emoji: '🐎' },
+      { text: 'Castles were built to protect kingdoms from invasion.', emoji: '🏯' },
+      { text: 'Diplomacy and alliances were a king\u2019s most powerful tools.', emoji: '🤝' },
+      { text: 'A true king rules with both strength and compassion.', emoji: '❤️' },
+      { text: 'Royal bloodlines once decided who would inherit the throne.', emoji: '🩸' },
+      { text: 'The greatest kingdoms were built on trust between ruler and people.', emoji: '🏯' },
     ],
   },
   doctor: {
@@ -33,18 +45,30 @@ const TEMPLATE_LOADING = {
     ],
   },
   astronaut: {
-    title: 'Mission Control Is Preparing Your Launch',
+    title: 'Exploring the Universe',
     emoji: '🚀',
     color: '#6366f1',
     messages: [
-      { text: 'Launch sequence initiated...', emoji: '🚀' },
-      { text: 'Calibrating space systems...', emoji: '🛰️' },
-      { text: 'Preparing your astronaut suit...', emoji: '👨‍🚀' },
-      { text: 'Approaching orbit...', emoji: '🌍' },
-      { text: 'Mapping distant galaxies...', emoji: '🌌' },
-      { text: 'Fueling your interstellar journey...', emoji: '🛸' },
-      { text: 'Preparing for liftoff...', emoji: '🔥' },
-      { text: 'Exploring the universe for your perfect look...', emoji: '✨' },
+      { text: 'Astronauts are highly trained space explorers.', emoji: '👨‍🚀' },
+      { text: 'Becoming an astronaut requires years of education and training.', emoji: '📚' },
+      { text: 'Astronauts experience microgravity while in space.', emoji: '🛰️' },
+      { text: 'Space missions help us learn more about our universe.', emoji: '🌌' },
+      { text: 'Astronauts conduct scientific experiments in orbit.', emoji: '🔬' },
+      { text: 'The International Space Station travels around Earth every 90 minutes.', emoji: '🛰️' },
+      { text: 'Astronauts train underwater to prepare for spacewalks.', emoji: '🤿' },
+      { text: 'Living in space requires both physical and mental strength.', emoji: '💪' },
+      { text: 'Astronauts inspire future generations to explore science and technology.', emoji: '🔭' },
+      { text: 'Every space mission expands human knowledge.', emoji: '🧠' },
+      { text: 'Space exploration helps improve life on Earth.', emoji: '🌍' },
+      { text: 'Astronauts represent humanity\u2019s desire to explore the unknown.', emoji: '✨' },
+      { text: 'In space, sunrises and sunsets happen multiple times a day.', emoji: '🌅' },
+      { text: 'Astronauts must learn to operate complex spacecraft systems.', emoji: '🛸' },
+      { text: 'Spacesuits protect astronauts from extreme temperatures and radiation.', emoji: '🧑‍🚀' },
+      { text: 'Rockets must reach incredible speeds to escape Earth\u2019s gravity.', emoji: '🔥' },
+      { text: 'Astronauts often work alongside scientists from many countries.', emoji: '🤝' },
+      { text: 'Years of preparation go into every minute spent in orbit.', emoji: '⏳' },
+      { text: 'Some astronauts spend over a year aboard a single mission.', emoji: '🗓️' },
+      { text: 'Looking at Earth from space changes how astronauts see the world.', emoji: '🌎' },
     ],
   },
   chef: {
@@ -93,18 +117,30 @@ const TEMPLATE_LOADING = {
     ],
   },
   avenger: {
-    title: 'Assembling Your Superhero Identity',
+    title: 'The Spirit of a Hero',
     emoji: '⚡',
     color: '#ef4444',
     messages: [
-      { text: 'Activating superhero mode...', emoji: '⚡' },
-      { text: 'Preparing your battle-ready look...', emoji: '🛡️' },
-      { text: 'Enhancing heroic powers...', emoji: '💥' },
-      { text: 'Building your legendary presence...', emoji: '🌟' },
-      { text: 'The world needs a hero...', emoji: '🌍' },
-      { text: 'Suiting up for action...', emoji: '🦸' },
-      { text: 'Charging your super abilities...', emoji: '🔋' },
-      { text: 'Your heroic transformation is almost complete...', emoji: '✨' },
+      { text: 'True heroes use their strength to protect others.', emoji: '🛡️' },
+      { text: 'Great heroes are defined by their courage and determination.', emoji: '🔥' },
+      { text: 'Teamwork is one of the most important qualities of an Avenger.', emoji: '🤝' },
+      { text: 'Heroes often face challenges that seem impossible.', emoji: '⚡' },
+      { text: 'Leadership and responsibility go hand in hand.', emoji: '🦸' },
+      { text: 'Courage means acting despite fear.', emoji: '💪' },
+      { text: 'Every hero starts as an ordinary person who chooses to do the right thing.', emoji: '🌟' },
+      { text: 'Heroes inspire people through their actions.', emoji: '✨' },
+      { text: 'Protecting others requires sacrifice and dedication.', emoji: '❤️' },
+      { text: 'The greatest heroes never give up.', emoji: '🚀' },
+      { text: 'Strength is important, but character is what truly defines a hero.', emoji: '🧠' },
+      { text: 'Every challenge is an opportunity to become stronger.', emoji: '💥' },
+      { text: 'Heroes rise to the occasion when the world needs them most.', emoji: '🌍' },
+      { text: 'A true team is stronger than any single hero alone.', emoji: '🤜🤛' },
+      { text: 'Heroes often hide their struggles behind their strength.', emoji: '🎭' },
+      { text: 'Justice and fairness guide a hero\u2019s every decision.', emoji: '⚖️' },
+      { text: 'Heroes train relentlessly to master their unique abilities.', emoji: '🏋️' },
+      { text: 'A hero\u2019s greatest power is often their unwavering will.', emoji: '🔋' },
+      { text: 'Every hero has a weakness, but it\u2019s how they overcome it that matters.', emoji: '🛡️' },
+      { text: 'Heroes remind us that anyone can choose to make a difference.', emoji: '🌟' },
     ],
   },
 };
@@ -137,7 +173,7 @@ function LoadingScreen({ userName, templateName }) {
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
 
-  // Rotate messages with fade
+  // Rotate messages with fade — every 3.5s, matching the 3-4s cadence for immersive reading
   useEffect(() => {
     const t = setInterval(() => {
       setVisible(false);
@@ -145,7 +181,7 @@ function LoadingScreen({ userName, templateName }) {
         setMsgIdx((p) => (p + 1) % config.messages.length);
         setVisible(true);
       }, 400);
-    }, 2800);
+    }, 3500);
     return () => clearInterval(t);
   }, [config]);
 
@@ -382,10 +418,10 @@ function LoadingScreen({ userName, templateName }) {
             </div>
 
             {/* Step dots */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '22px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: '6px', marginTop: '22px', maxWidth: '300px', margin: '22px auto 0' }}>
               {config.messages.map((_, i) => (
                 <div key={i} style={{
-                  width: i === msgIdx ? '24px' : '8px', height: '8px', borderRadius: '4px',
+                  width: i === msgIdx ? '20px' : '6px', height: '6px', borderRadius: '3px',
                   background: i === msgIdx ? config.color : i < msgIdx ? '#6366f1' : 'rgba(255,255,255,0.08)',
                   transition: 'all 0.4s ease',
                   boxShadow: i === msgIdx ? `0 0 10px ${config.color}80` : 'none',
