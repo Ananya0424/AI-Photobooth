@@ -85,6 +85,9 @@ function TemplateScreen({ gender, onSelect, onBack, apiBase }) {
 
   const handleContinue = async () => {
     if (!selected || isSubmitting) return;
+    // Debug: confirm exactly what template object is being handed off to the parent/navigation.
+    console.log('Selected Template:', selected);
+    console.log('Selected Template name (what LoadingScreen should match on):', selected?.name);
     setIsSubmitting(true);
     try { await onSelect(selected); }
     finally { setIsSubmitting(false); }

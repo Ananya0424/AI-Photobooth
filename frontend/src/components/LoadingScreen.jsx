@@ -29,21 +29,6 @@ const TEMPLATE_LOADING = {
       { text: 'The greatest kingdoms were built on trust between ruler and people.', emoji: '🏯' },
     ],
   },
-  doctor: {
-    title: 'Preparing Your Medical Professional Look',
-    emoji: '🩺',
-    color: '#38bdf8',
-    messages: [
-      { text: 'Putting on the white coat...', emoji: '🥼' },
-      { text: 'Preparing medical expertise...', emoji: '🩺' },
-      { text: 'Adding professional confidence...', emoji: '💼' },
-      { text: 'Organizing your medical profile...', emoji: '📋' },
-      { text: 'Creating a trusted doctor appearance...', emoji: '💊' },
-      { text: 'Almost ready to save lives...', emoji: '❤️‍🩹' },
-      { text: 'Finalizing professional details...', emoji: '🏥' },
-      { text: 'Building your healthcare hero look...', emoji: '🦺' },
-    ],
-  },
   astronaut: {
     title: 'Exploring the Universe',
     emoji: '🚀',
@@ -69,51 +54,6 @@ const TEMPLATE_LOADING = {
       { text: 'Years of preparation go into every minute spent in orbit.', emoji: '⏳' },
       { text: 'Some astronauts spend over a year aboard a single mission.', emoji: '🗓️' },
       { text: 'Looking at Earth from space changes how astronauts see the world.', emoji: '🌎' },
-    ],
-  },
-  chef: {
-    title: 'Cooking Up Your Masterpiece',
-    emoji: '👨‍🍳',
-    color: '#f472b6',
-    messages: [
-      { text: 'Gathering premium ingredients...', emoji: '🥘' },
-      { text: 'Sharpening the chef\'s knife...', emoji: '🔪' },
-      { text: 'Preparing culinary magic...', emoji: '🍽️' },
-      { text: 'Mixing creativity with flavor...', emoji: '🎨' },
-      { text: 'Creating a five-star transformation...', emoji: '⭐' },
-      { text: 'Adding gourmet details...', emoji: '✨' },
-      { text: 'The kitchen is buzzing with excitement...', emoji: '🔥' },
-      { text: 'Almost ready to serve perfection...', emoji: '🌟' },
-    ],
-  },
-  anime: {
-    title: 'Entering the Anime Universe',
-    emoji: '⚡',
-    color: '#a855f7',
-    messages: [
-      { text: 'Sketching your anime character...', emoji: '🎨' },
-      { text: 'Adding powerful anime effects...', emoji: '⚡' },
-      { text: 'Unlocking your hidden powers...', emoji: '💥' },
-      { text: 'Bringing your hero story to life...', emoji: '🦸' },
-      { text: 'Enhancing dramatic visuals...', emoji: '🌌' },
-      { text: 'Charging up your transformation...', emoji: '🔋' },
-      { text: 'Creating your anime adventure...', emoji: '🗺️' },
-      { text: 'Finalizing your legendary character design...', emoji: '✨' },
-    ],
-  },
-  bride: {
-    title: 'Creating Your Dream Bridal Look',
-    emoji: '💍',
-    color: '#ec4899',
-    messages: [
-      { text: 'Designing a magical bridal style...', emoji: '👰' },
-      { text: 'Adding elegant details...', emoji: '💐' },
-      { text: 'Preparing your special moment...', emoji: '🕊️' },
-      { text: 'Perfecting every graceful touch...', emoji: '✨' },
-      { text: 'Crafting a timeless bridal portrait...', emoji: '📸' },
-      { text: 'Adding beauty and elegance...', emoji: '🌸' },
-      { text: 'Making your dream look come true...', emoji: '💖' },
-      { text: 'Almost ready for the grand reveal...', emoji: '💍' },
     ],
   },
   avenger: {
@@ -159,16 +99,29 @@ const DEFAULT_LOADING = {
 };
 
 function getTemplateConfig(templateName) {
-  if (!templateName) return DEFAULT_LOADING;
-  const key = templateName.toLowerCase();
-  for (const [k, v] of Object.entries(TEMPLATE_LOADING)) {
-    if (key.includes(k)) return v;
-  }
-  return DEFAULT_LOADING;
+  const key = templateName?.toLowerCase().trim();
+  const config = (key && TEMPLATE_LOADING[key]) || DEFAULT_LOADING;
+
+  // Debug logging — trace exactly what template name arrived and what was matched.
+  console.log('Template received by Loading Screen:', templateName);
+  console.log('Normalized key used for lookup:', key);
+  console.log('Loading Config selected:', config === DEFAULT_LOADING ? 'DEFAULT_LOADING (no match found!)' : key);
+
+  return config;
 }
 
 function LoadingScreen({ userName, templateName }) {
   const config = useMemo(() => getTemplateConfig(templateName), [templateName]);
+
+  // Debug: confirm the LoadingScreen actually received a templateName prop at all.
+  useEffect(() => {
+    console.log('Template received by Loading Screen:', templateName);
+    console.log('Loading Config:', config);
+    if (!templateName) {
+      console.warn('LoadingScreen received no templateName prop — check the parent component / navigation flow.');
+    }
+  }, [templateName, config]);
+
   const [msgIdx, setMsgIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
