@@ -299,28 +299,6 @@ function LoadingScreen({ userName, templateName }) {
         ))}
 
         <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 10 }}>
-          {/* TEMP DEBUG BANNER — remove once templateName is confirmed flowing correctly.
-              Shows exactly what this component received, directly on screen. */}
-          <div style={{
-            background: 'rgba(0,0,0,0.6)', border: '1px solid #f59e0b',
-            borderRadius: '10px', padding: '10px 14px', marginBottom: '14px',
-            fontSize: '12px', fontFamily: 'monospace', color: '#fbbf24',
-            wordBreak: 'break-word', textAlign: 'left',
-          }}>
-            <div>🐛 DEBUG — templateName prop received:</div>
-            <div style={{ color: '#fff', marginTop: '4px' }}>
-              {templateName === undefined
-                ? 'undefined (prop not passed at all)'
-                : templateName === null
-                ? 'null'
-                : typeof templateName === 'object'
-                ? JSON.stringify(templateName)
-                : `"${templateName}" (type: ${typeof templateName})`}
-            </div>
-            <div style={{ marginTop: '4px' }}>stableKey derived: <span style={{ color: '#fff' }}>{stableKey || '(empty)'}</span></div>
-            <div style={{ marginTop: '4px' }}>Config matched: <span style={{ color: '#fff' }}>{config.title}</span></div>
-          </div>
-
           {/* Outer glow */}
           <div style={{
             position: 'absolute', inset: '-2px', borderRadius: '26px',

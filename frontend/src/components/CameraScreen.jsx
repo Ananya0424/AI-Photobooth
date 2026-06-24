@@ -4,7 +4,7 @@ import BoothBackground, { boothStyles } from './BoothBackground';
 
 const videoConstraints = { width: 720, height: 720, facingMode: 'user' };
 
-function CameraScreen({ onCapture, onBack, userName }) {
+function CameraScreen({ onCapture, onBack, userName, selectedTemplate }) {
   const webcamRef = useRef(null);
   const [countdown, setCountdown]       = useState(null);
   const [showFlash, setShowFlash]       = useState(false);
@@ -25,10 +25,13 @@ function CameraScreen({ onCapture, onBack, userName }) {
       if (imageSrc) {
         setShowFlash(true);
         setTimeout(() => setShowFlash(false), 400);
-        setTimeout(() => onCapture(imageSrc), 300);
+        // Pass selectedTemplate through alongside the photo — previously this was
+        // dropped here because CameraScreen never received or forwarded it.
+        console.log('🟢 [CameraScreen] Capturing photo, forwarding selectedTemplate:', selectedTemplate);
+        setTimeout(() => onCapture(imageSrc, selectedTemplate), 300);
       }
     }
-  }, [onCapture]);
+  }, [onCapture, selectedTemplate]);
 
   const startCountdown = useCallback(() => {
     if (countdown !== null) return;
