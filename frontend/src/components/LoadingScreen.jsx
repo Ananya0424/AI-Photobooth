@@ -149,6 +149,33 @@ const TEMPLATE_LOADING = {
       { text: 'The best is always yet to come for those who love deeply.', emoji: '🌅' },
     ],
   },
+  queen: {
+    title: 'The Power of a Queen',
+    emoji: '👸',
+    color: '#d946ef',
+    messages: [
+      { text: 'A queen leads with grace, strength, and unwavering dignity.', emoji: '👸' },
+      { text: 'Queens throughout history have shaped the fate of nations.', emoji: '🌍' },
+      { text: 'True royalty is earned through wisdom, not just bloodline.', emoji: '👑' },
+      { text: 'A queen\'s compassion is her greatest crown.', emoji: '❤️' },
+      { text: 'She rules not by force, but by the power of her presence.', emoji: '✨' },
+      { text: 'Great queens inspire loyalty through fairness and vision.', emoji: '⚖️' },
+      { text: 'A queen stands tall in the face of every challenge.', emoji: '💪' },
+      { text: 'Elegance and strength are not opposites — a queen embodies both.', emoji: '🌸' },
+      { text: 'History\'s greatest queens changed the world by daring to lead.', emoji: '📜' },
+      { text: 'Behind every prosperous kingdom is a queen\'s steady hand.', emoji: '🏰' },
+      { text: 'A queen\'s word carries the weight of a thousand promises.', emoji: '🕊️' },
+      { text: 'She turns her struggles into stepping stones toward greatness.', emoji: '🌟' },
+      { text: 'Royal courts flourished under the vision of wise queens.', emoji: '🎭' },
+      { text: 'A true queen lifts others up as she rises.', emoji: '🚀' },
+      { text: 'The crown rests heaviest on those who wear it most gracefully.', emoji: '💎' },
+      { text: 'Queens are remembered not for their jewels, but for their justice.', emoji: '📖' },
+      { text: 'A queen\'s silence can speak louder than a king\'s decree.', emoji: '🧠' },
+      { text: 'She governs with a heart as strong as iron and as warm as sunlight.', emoji: '☀️' },
+      { text: 'Every great empire has been touched by a queen\'s brilliance.', emoji: '🏛️' },
+      { text: 'A queen knows that true power comes from serving her people well.', emoji: '🤝' },
+    ],
+  },
 };
 
 // ─── Alias map ───────────────────────────────────────────────────────────────
@@ -160,7 +187,7 @@ const TEMPLATE_ALIASES = {
   'royal': 'king',
   'palace': 'king',
   'crown': 'king',
-  'queen': 'king',  // fallback — queen shares the royal theme
+  'queen': 'queen',   // queen has its own dedicated messages now
 
   // astronaut / space
   'space': 'astronaut',
