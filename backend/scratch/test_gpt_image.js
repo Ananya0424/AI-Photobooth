@@ -12,7 +12,7 @@ async function run() {
       model: "gpt-image-2",
       prompt: "A beautiful cinematic digital painting of a futuristic astronaut, photorealistic, 8k",
       n: 1,
-      size: "512x512",
+      size: "1024x1024",
     });
     console.log("✓ Success with gpt-image-2:", res.data[0].url);
   } catch (err) {

@@ -12,7 +12,7 @@ async function run() {
       model: "gpt-image-2",
       prompt: "A beautiful cat sitting on a throne",
       n: 1,
-      size: "512x512",
+      size: "1024x1024",
       quality: "high",
     });
     console.log("✓ Success with quality: 'high'!", res.data[0] ? "Has data" : "No data");

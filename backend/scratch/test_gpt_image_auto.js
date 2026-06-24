@@ -13,7 +13,7 @@ async function testQuality(qualityVal) {
       model: "gpt-image-2",
       prompt: "A beautiful cat sitting on a throne",
       n: 1,
-      size: "512x512",
+      size: "1024x1024",
       quality: qualityVal,
     });
     console.log(`✓ Success with quality '${qualityVal}' in ${Date.now() - start}ms!`);
