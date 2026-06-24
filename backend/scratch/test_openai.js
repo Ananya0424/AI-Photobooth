@@ -13,7 +13,7 @@ async function run() {
       model: "dall-e-3",
       prompt: "A beautiful cat sitting on a throne",
       n: 1,
-      size: "1024x1024",
+      size: "512x512",
       quality: "hd",
       style: "natural",
     });
@@ -28,7 +28,7 @@ async function run() {
       model: "dall-e-3",
       prompt: "A beautiful cat sitting on a throne",
       n: 1,
-      size: "1024x1024",
+      size: "512x512",
       quality: "hd",
     });
     console.log("✓ Success WITHOUT style parameter:", res2.data[0].url);

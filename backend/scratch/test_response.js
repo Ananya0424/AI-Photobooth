@@ -12,7 +12,7 @@ async function run() {
       model: "gpt-image-2",
       prompt: "A photorealistic portrait of an astronaut",
       n: 1,
-      size: "1024x1024",
+      size: "512x512",
     });
     console.log("Full response:", JSON.stringify(res, null, 2));
   } catch (err) {

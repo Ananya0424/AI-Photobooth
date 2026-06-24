@@ -23,7 +23,7 @@ async function run() {
     model: "gpt-image-2",
     prompt: "A photorealistic portrait of an astronaut",
     n: 1,
-    size: "1024x1024"
+    size: "512x512"
   });
 
   // Test 2: model, prompt, size, quality
@@ -31,7 +31,7 @@ async function run() {
     model: "gpt-image-2",
     prompt: "A photorealistic portrait of an astronaut",
     n: 1,
-    size: "1024x1024",
+    size: "512x512",
     quality: "hd"
   });
 }

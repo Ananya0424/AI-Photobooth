@@ -214,7 +214,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
       model:  modelName,
       prompt: fullPrompt,
       n:      1,
-      size:   "1024x1024",
+      size:   "512x512",
     };
 
     if (modelName === "dall-e-3") {
