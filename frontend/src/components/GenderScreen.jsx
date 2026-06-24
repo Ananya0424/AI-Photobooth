@@ -1,235 +1,219 @@
 import { useState, useMemo } from 'react';
+import BoothBackground, { boothStyles } from './BoothBackground';
 
 function GenderScreen({ onSelect, onBack, userName }) {
-  const [selected, setSelected] = useState('');
+  const [selected, setSelected]   = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [hoveredId, setHoveredId] = useState('');
-
-  const sparkles = useMemo(() => Array.from({ length: 15 }, (_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 100}%`,
-    delay: `${Math.random() * 4}s`,
-    duration: `${2 + Math.random() * 3}s`,
-    size: `${2 + Math.random() * 4}px`,
-  })), []);
+  const [hovered, setHovered]     = useState('');
 
   const handleSelect = async (gender) => {
+    if (isLoading) return;
     setSelected(gender);
     setIsLoading(true);
-    try {
-      await onSelect(gender);
-    } finally {
-      setIsLoading(false);
-    }
+    try { await onSelect(gender); }
+    finally { setIsLoading(false); }
   };
 
   return (
     <>
       <style>{`
-        @keyframes sparkle {
-          0%, 100% { opacity: 0; transform: scale(0) translateY(0); }
-          50% { opacity: 1; }
-          100% { opacity: 0; transform: scale(1) translateY(-80px); }
-        }
-        @keyframes float {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-16px); }
-        }
-        @keyframes scale-in {
-          0% { opacity: 0; transform: scale(0.95); }
-          100% { opacity: 1; transform: scale(1); }
-        }
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        @keyframes card-enter {
-          0% { opacity: 0; transform: translateY(24px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        .gs-sparkle { position: absolute; border-radius: 50%; pointer-events: none; animation: sparkle 4s ease-out infinite; }
-        .gs-sparkle-container { position: absolute; width: 100%; height: 100%; pointer-events: none; }
-        .gs-float { animation: float 3s ease-in-out infinite; }
+        ${boothStyles}
+        @keyframes gs-scale-in   { 0%{opacity:0;transform:scale(0.94)} 100%{opacity:1;transform:scale(1)} }
+        @keyframes gs-card-enter { 0%{opacity:0;transform:translateY(32px)} 100%{opacity:1;transform:translateY(0)} }
+        @keyframes gs-spin       { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes gs-shimmer    { 0%,100%{opacity:0.5} 50%{opacity:1} }
         .gs-glass {
-          background: rgba(255,255,255,0.05);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
+          background: rgba(255,255,255,0.06);
+          backdrop-filter: blur(24px);
+          -webkit-backdrop-filter: blur(24px);
           border: 1px solid rgba(255,255,255,0.1);
         }
+        .gs-back:hover { background: rgba(255,255,255,0.1); }
+
+        /* Gender cards */
+        .gs-card {
+          position: relative; width: 100%; border-radius: 20px;
+          padding: 0; cursor: pointer; outline: none;
+          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+          animation: gs-card-enter 0.5s ease-out both;
+        }
+        .gs-card:active { transform: scale(0.98); }
+
         .gs-card-male {
-          background: rgba(59, 130, 246, 0.08);
-          border: 1px solid rgba(59, 130, 246, 0.25);
-          backdrop-filter: blur(16px);
+          background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(37,99,235,0.06));
+          border: 1.5px solid rgba(59,130,246,0.25);
         }
         .gs-card-female {
-          background: rgba(236, 72, 153, 0.08);
-          border: 1px solid rgba(236, 72, 153, 0.25);
-          backdrop-filter: blur(16px);
+          background: linear-gradient(135deg, rgba(236,72,153,0.1), rgba(219,39,119,0.06));
+          border: 1.5px solid rgba(236,72,153,0.25);
         }
-        .gs-card-male:hover {
-          background: rgba(59, 130, 246, 0.15);
-          border-color: rgba(59, 130, 246, 0.5);
-          box-shadow: 0 20px 40px rgba(59, 130, 246, 0.2);
-          transform: translateY(-4px);
+        .gs-card-male:hover, .gs-card-male.hovered {
+          background: linear-gradient(135deg, rgba(59,130,246,0.18), rgba(37,99,235,0.12));
+          border-color: rgba(59,130,246,0.55);
+          box-shadow: 0 24px 48px rgba(59,130,246,0.22), inset 0 1px 0 rgba(59,130,246,0.15);
+          transform: translateY(-5px);
         }
-        .gs-card-female:hover {
-          background: rgba(236, 72, 153, 0.15);
-          border-color: rgba(236, 72, 153, 0.5);
-          box-shadow: 0 20px 40px rgba(236, 72, 153, 0.2);
-          transform: translateY(-4px);
+        .gs-card-female:hover, .gs-card-female.hovered {
+          background: linear-gradient(135deg, rgba(236,72,153,0.18), rgba(219,39,119,0.12));
+          border-color: rgba(236,72,153,0.55);
+          box-shadow: 0 24px 48px rgba(236,72,153,0.22), inset 0 1px 0 rgba(236,72,153,0.15);
+          transform: translateY(-5px);
         }
         .gs-card-male.selected {
-          background: rgba(59, 130, 246, 0.18);
-          border-color: rgba(59, 130, 246, 0.7);
-          box-shadow: 0 0 0 2px rgba(59,130,246,0.4), 0 20px 40px rgba(59, 130, 246, 0.25);
-          transform: translateY(-4px) scale(1.01);
+          background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(37,99,235,0.15));
+          border-color: rgba(59,130,246,0.7);
+          box-shadow: 0 0 0 2px rgba(59,130,246,0.3), 0 28px 56px rgba(59,130,246,0.28);
+          transform: translateY(-6px) scale(1.008);
         }
         .gs-card-female.selected {
-          background: rgba(236, 72, 153, 0.18);
-          border-color: rgba(236, 72, 153, 0.7);
-          box-shadow: 0 0 0 2px rgba(236,72,153,0.4), 0 20px 40px rgba(236, 72, 153, 0.25);
-          transform: translateY(-4px) scale(1.01);
+          background: linear-gradient(135deg, rgba(236,72,153,0.22), rgba(219,39,119,0.15));
+          border-color: rgba(236,72,153,0.7);
+          box-shadow: 0 0 0 2px rgba(236,72,153,0.3), 0 28px 56px rgba(236,72,153,0.28);
+          transform: translateY(-6px) scale(1.008);
         }
-        .gs-card { transition: all 0.35s ease; cursor: pointer; border-radius: 20px; padding: 36px 28px; text-align: center; animation: card-enter 0.5s ease-out both; }
-        .gs-spin { animation: spin-slow 2s linear infinite; }
-        .gs-back:hover { background: rgba(255,255,255,0.1); }
+        .gs-spin { animation: gs-spin 1.5s linear infinite; }
       `}</style>
 
       <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1rem',
-        background: 'linear-gradient(to bottom right, #0f172a, #2d1b4e, #0f172a)',
-        position: 'relative',
-        overflow: 'hidden',
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '1.5rem', background: 'linear-gradient(160deg, #07040e 0%, #120820 30%, #1e0f38 60%, #07040e 100%)',
+        position: 'relative', overflow: 'hidden',
       }}>
-        {/* Sparkles */}
-        <div className="gs-sparkle-container">
-          {sparkles.map((s) => (
-            <div key={s.id} className="gs-sparkle" style={{
-              left: s.left, top: s.top,
-              animationDelay: s.delay, animationDuration: s.duration,
-              width: s.size, height: s.size,
-              background: s.id % 3 === 0 ? '#6366f1' : s.id % 3 === 1 ? '#8b5cf6' : '#ec4899',
-            }} />
-          ))}
-        </div>
+        <BoothBackground emojis={[
+          { e: '👔', top: '7%',   left: '5%',   delay: '0s',   size: '44px', opacity: 0.18 },
+          { e: '👗', top: '12%',  right: '6%',  delay: '1.3s', size: '40px', opacity: 0.15 },
+          { e: '✨', bottom: '9%', left: '7%',  delay: '0.7s', size: '30px', opacity: 0.15 },
+          { e: '🌟', bottom: '13%', right: '5%', delay: '2.1s', size: '40px', opacity: 0.18 },
+        ]} />
 
-        {/* Floating decorations */}
-        {[
-          { emoji: '👔', top: '70px', left: '40px', delay: '0s', size: '44px', opacity: 0.2 },
-          { emoji: '👗', top: '100px', right: '50px', delay: '1.2s', size: '40px', opacity: 0.18 },
-          { emoji: '✨', bottom: '90px', left: '60px', delay: '0.6s', size: '36px', opacity: 0.15 },
-          { emoji: '🌟', bottom: '120px', right: '45px', delay: '1.8s', size: '44px', opacity: 0.2 },
-        ].map((d, i) => (
-          <div key={i} className="gs-float" style={{
-            position: 'absolute', fontSize: d.size, opacity: d.opacity,
-            userSelect: 'none', pointerEvents: 'none', animationDelay: d.delay,
-            top: d.top, left: d.left, right: d.right, bottom: d.bottom,
-          }}>{d.emoji}</div>
-        ))}
+        <button onClick={onBack} className="gs-back" style={{
+          position: 'fixed', top: '24px', left: '24px', zIndex: 20,
+          background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
+          borderRadius: '12px', padding: '10px 18px', color: '#cbd5e1',
+          fontSize: '14px', fontWeight: '500', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          backdropFilter: 'blur(12px)', transition: 'all 0.2s ease',
+        }}>← Back</button>
 
-        {/* Back button */}
-        <button
-          onClick={onBack}
-          className="gs-back"
-          style={{
-            position: 'fixed', top: '24px', left: '24px', zIndex: 20,
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: '12px', padding: '10px 18px', color: '#cbd5e1',
-            fontSize: '14px', fontWeight: '500', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            backdropFilter: 'blur(12px)', transition: 'all 0.2s ease',
-          }}
-        >
-          <span>←</span> Back
-        </button>
-
-        {/* Main content */}
-        <div style={{ width: '100%', maxWidth: '560px', position: 'relative', zIndex: 10 }}>
-          {/* Glass header card */}
+        <div style={{ width: '100%', maxWidth: '520px', position: 'relative', zIndex: 10 }}>
+          {/* Header card */}
           <div className="gs-glass" style={{
-            borderRadius: '24px', padding: '36px 40px 28px',
-            boxShadow: '0 25px 50px rgba(0,0,0,0.5)',
-            animation: 'scale-in 0.6s ease-out',
-            marginBottom: '24px',
+            borderRadius: '24px', padding: '36px 40px 32px', marginBottom: '20px',
+            boxShadow: '0 28px 56px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.07)',
+            animation: 'gs-scale-in 0.55s ease-out',
           }}>
             {/* Icon */}
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-              <div style={{
-                width: '72px', height: '72px', borderRadius: '16px',
-                background: 'linear-gradient(135deg, #a855f7, #ec4899)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '30px', boxShadow: '0 10px 25px rgba(168,85,247,0.35)',
-              }}>🎭</div>
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  position: 'absolute', inset: '-10px', borderRadius: '26px',
+                  background: 'radial-gradient(ellipse, rgba(168,85,247,0.28), transparent 70%)',
+                }} />
+                <div style={{
+                  width: '80px', height: '80px', borderRadius: '18px',
+                  background: 'linear-gradient(135deg, #a855f7, #ec4899)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '32px', boxShadow: '0 12px 28px rgba(168,85,247,0.45)',
+                  position: 'relative',
+                }}>🎭</div>
+              </div>
             </div>
 
-            {/* Greeting */}
-            <p style={{ color: '#a78bfa', textAlign: 'center', fontSize: '14px', marginBottom: '8px', fontWeight: '500' }}>
+            <p style={{ color: '#a78bfa', textAlign: 'center', fontSize: '14px', marginBottom: '6px', fontWeight: '500' }}>
               Hey <span style={{ color: '#f472b6' }}>{userName}</span> 👋
             </p>
-
-            {/* Title */}
             <h2 style={{
-              fontSize: '36px', fontWeight: '900', textAlign: 'center', marginBottom: '10px',
-              background: 'linear-gradient(to right, #a78bfa, #f472b6, #c084fc)',
+              fontSize: '38px', fontWeight: '900', textAlign: 'center', marginBottom: '10px',
+              background: 'linear-gradient(135deg, #a78bfa, #f472b6, #c084fc)',
               WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              letterSpacing: '-0.3px',
             }}>Choose Your Style</h2>
-
             <p style={{ color: '#94a3b8', textAlign: 'center', fontSize: '15px', lineHeight: '1.6' }}>
               Select a costume category to see your AI portrait options
             </p>
           </div>
 
-          {/* Gender cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          {/* ── VERTICAL gender cards ── */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px' }}>
             {[
-              { value: 'male', emoji: '👔', label: 'Male', desc: 'Suits, uniforms & formal wear', color: '#3b82f6', delay: '0.15s' },
-              { value: 'female', emoji: '👗', label: 'Female', desc: 'Dresses, gowns & elegant outfits', color: '#ec4899', delay: '0.25s' },
-            ].map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => !isLoading && handleSelect(opt.value)}
-                onMouseEnter={() => setHoveredId(opt.value)}
-                onMouseLeave={() => setHoveredId('')}
-                disabled={isLoading}
-                className={`gs-card ${opt.value === 'male' ? 'gs-card-male' : 'gs-card-female'} ${selected === opt.value ? 'selected' : ''}`}
-                style={{ animationDelay: opt.delay, border: 'none', outline: 'none', position: 'relative' }}
-              >
-                {/* Check badge */}
-                {selected === opt.value && (
+              {
+                value: 'male',
+                emoji: '👔', label: 'Male',
+                desc: 'Suits, uniforms & formal wear',
+                subDesc: 'Classic & contemporary menswear looks',
+                color: '#3b82f6',
+                gradient: 'linear-gradient(135deg, #1d4ed8, #3b82f6)',
+                delay: '0.1s',
+              },
+              {
+                value: 'female',
+                emoji: '👗', label: 'Female',
+                desc: 'Dresses, gowns & elegant outfits',
+                subDesc: 'Glamorous & sophisticated womenswear',
+                color: '#ec4899',
+                gradient: 'linear-gradient(135deg, #be185d, #ec4899)',
+                delay: '0.22s',
+              },
+            ].map((opt) => {
+              const isSelected = selected === opt.value;
+              const isHovered  = hovered === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => !isLoading && handleSelect(opt.value)}
+                  onMouseEnter={() => setHovered(opt.value)}
+                  onMouseLeave={() => setHovered('')}
+                  disabled={isLoading}
+                  className={`gs-card ${opt.value === 'male' ? 'gs-card-male' : 'gs-card-female'}${isSelected ? ' selected' : isHovered ? ' hovered' : ''}`}
+                  style={{ animationDelay: opt.delay }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', padding: '28px 32px' }}>
+                    {/* Large emoji in a styled circle */}
+                    <div style={{
+                      width: '80px', height: '80px', borderRadius: '50%', flexShrink: 0,
+                      background: `${opt.color}22`,
+                      border: `2px solid ${opt.color}40`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '40px', lineHeight: 1,
+                      transition: 'all 0.3s ease',
+                      transform: isSelected || isHovered ? 'scale(1.1)' : 'scale(1)',
+                      boxShadow: isSelected ? `0 0 24px ${opt.color}50` : 'none',
+                      filter: isSelected ? `drop-shadow(0 0 12px ${opt.color}80)` : 'none',
+                    }}>{opt.emoji}</div>
+
+                    {/* Text */}
+                    <div style={{ flex: 1, textAlign: 'left' }}>
+                      <h3 style={{ color: '#f1f5f9', fontSize: '26px', fontWeight: '800', marginBottom: '4px', lineHeight: 1.2 }}>
+                        {opt.label}
+                      </h3>
+                      <p style={{ color: '#cbd5e1', fontSize: '14px', marginBottom: '4px', fontWeight: '500' }}>{opt.desc}</p>
+                      <p style={{ color: '#64748b', fontSize: '12px' }}>{opt.subDesc}</p>
+                    </div>
+
+                    {/* Arrow / check */}
+                    <div style={{
+                      width: '44px', height: '44px', borderRadius: '50%', flexShrink: 0,
+                      background: isSelected ? opt.gradient : 'rgba(255,255,255,0.06)',
+                      border: `1.5px solid ${isSelected ? opt.color : 'rgba(255,255,255,0.12)'}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: isSelected ? '20px' : '18px', color: isSelected ? '#fff' : '#64748b',
+                      transition: 'all 0.3s ease',
+                      boxShadow: isSelected ? `0 0 16px ${opt.color}60` : 'none',
+                    }}>
+                      {isSelected ? '✓' : '→'}
+                    </div>
+                  </div>
+
+                  {/* Bottom accent bar */}
                   <div style={{
-                    position: 'absolute', top: '14px', right: '14px',
-                    width: '24px', height: '24px', borderRadius: '50%',
-                    background: opt.color, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '12px', color: '#fff', fontWeight: '700',
-                    boxShadow: `0 0 12px ${opt.color}80`,
-                  }}>✓</div>
-                )}
-
-                {/* Emoji */}
-                <div style={{
-                  fontSize: '56px', marginBottom: '14px', lineHeight: 1,
-                  transition: 'transform 0.3s ease',
-                  transform: selected === opt.value || hoveredId === opt.value ? 'scale(1.12)' : 'scale(1)',
-                  filter: selected === opt.value ? `drop-shadow(0 0 16px ${opt.color}70)` : 'none',
-                }}>{opt.emoji}</div>
-
-                <h3 style={{ color: '#f1f5f9', fontSize: '22px', fontWeight: '800', marginBottom: '8px' }}>{opt.label}</h3>
-                <p style={{ color: '#94a3b8', fontSize: '13px', lineHeight: '1.5' }}>{opt.desc}</p>
-
-                {/* Bottom accent */}
-                <div style={{
-                  height: '3px', borderRadius: '2px', marginTop: '18px',
-                  background: `linear-gradient(to right, transparent, ${opt.color}, transparent)`,
-                  opacity: selected === opt.value ? 1 : 0,
-                  transition: 'opacity 0.3s ease',
-                }} />
-              </button>
-            ))}
+                    height: '3px', borderRadius: '0 0 18px 18px',
+                    background: `linear-gradient(to right, transparent, ${opt.color}80, transparent)`,
+                    opacity: isSelected ? 1 : 0,
+                    transition: 'opacity 0.3s ease',
+                  }} />
+                </button>
+              );
+            })}
           </div>
 
           {/* Loading state */}
@@ -246,8 +230,8 @@ function GenderScreen({ onSelect, onBack, userName }) {
             </div>
           )}
 
-          <p style={{ color: '#475569', fontSize: '12px', textAlign: 'center', marginTop: '16px' }}>
-            ✦ Powered by AI • Premium Experience ✦
+          <p style={{ color: '#374151', fontSize: '11px', textAlign: 'center', marginTop: '16px', letterSpacing: '0.5px' }}>
+            ✦ POWERED BY AI  ·  PREMIUM EXPERIENCE ✦
           </p>
         </div>
       </div>
