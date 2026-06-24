@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const Session = require("../models/Session");
+const GalleryImage = require("../models/GalleryImage");
 const AppSettings = require("../models/AppSettings");
 const { uploadImage, uploadImageFromUrl } = require("../services/cloudinaryService");
 const { generateFaceSwap, isMockMode } = require("../services/aiService");
@@ -322,6 +323,20 @@ const captureImage = async (req, res) => {
       session.generationDuration = Date.now() - genStart;
       session.status = "completed";
       await session.save();
+
+      // Auto-save to gallery
+      try {
+        await GalleryImage.create({
+          imageUrl: finalUrl,
+          userName: session.userName,
+          sessionId: session.sessionId,
+          templateName: session.selectedTemplate?.name || null,
+          gender: session.gender,
+        });
+        console.log(`[Gallery] Auto-saved image for session: ${sessionId}`);
+      } catch (galleryErr) {
+        console.error(`[Gallery] Failed to auto-save image:`, galleryErr.message);
+      }
 
       console.log(`[Backend LOG] generation response received for session: ${sessionId}, url: ${finalUrl}`);
       console.log(`[Session] ${sessionId} - AI generation completed in ${session.generationDuration}ms: ${finalUrl.substring(0, 80)}...`);

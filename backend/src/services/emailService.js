@@ -118,7 +118,7 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
               background: linear-gradient(135deg, #818cf8, #a78bfa, #f472b6);
               -webkit-background-clip: text;
               -webkit-text-fill-color: transparent;
-              color: #a78bfa;
+              color: #1a035f;
               margin-bottom: 10px;
               font-size: 28px;
             }

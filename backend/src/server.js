@@ -5,6 +5,7 @@ require("dotenv").config();
 
 const connectDB = require("./config/db");
 const sessionRoutes = require("./routes/sessionRoutes");
+const galleryRoutes = require("./routes/galleryRoutes");
 const { isMockMode } = require("./services/aiService");
 
 const app = express();
@@ -35,6 +36,7 @@ app.get("/health", (req, res) => {
 
 // ===== API Routes =====
 app.use(sessionRoutes);
+app.use(galleryRoutes);
 
 // ===== Frontend Fallback (for React Router) =====
 if (process.env.NODE_ENV === "production") {

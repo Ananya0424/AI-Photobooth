@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import WelcomeScreen from './components/WelcomeScreen';
 import GenderScreen from './components/GenderScreen';
@@ -7,10 +8,15 @@ import CameraScreen from './components/CameraScreen';
 import LoadingScreen from './components/LoadingScreen';
 import ResultScreen from './components/ResultScreen';
 import SettingsScreen from './components/SettingsScreen';
+import GalleryPage from './components/GalleryPage';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
 
-function App() {
+// ─────────────────────────────────────────
+//  Main photobooth flow (all non-gallery screens)
+// ─────────────────────────────────────────
+function PhotoboothFlow() {
+  const navigate = useNavigate();
   const [currentScreen, setCurrentScreen] = useState('landing');
   const [userName, setUserName] = useState('');
   const [email, setEmail] = useState('');
@@ -370,6 +376,18 @@ function App() {
         >⚙️</button>
       )}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────
+//  Root App with routing
+// ─────────────────────────────────────────
+function App() {
+  return (
+    <Routes>
+      <Route path="/gallery" element={<GalleryPage />} />
+      <Route path="/*" element={<PhotoboothFlow />} />
+    </Routes>
   );
 }
 

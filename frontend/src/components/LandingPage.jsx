@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const galleryItems = [
   { img: '/assets/templates/male_avenger.jpg', name: 'Avenger' },
@@ -10,12 +10,18 @@ const galleryItems = [
 ];
 
 function LandingPage({ onStart }) {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
       <style>{`
         /* Reset and Base Styles */
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+        }
+
         body {
           margin: 0;
           font-family: 'Inter', sans-serif;
@@ -23,15 +29,19 @@ function LandingPage({ onStart }) {
           color: white;
         }
 
+        /* PORTRAIT-FIRST CONTAINER */
         .lp-container {
           min-height: 100vh;
+          min-height: 100dvh;
           position: relative;
           display: flex;
           flex-direction: column;
           overflow-x: hidden;
+          width: 100%;
+          background-color: #07040e;
         }
 
-        /* Full Background Image */
+        /* Background Image - Portrait Optimized */
         .lp-bg {
           position: absolute;
           inset: 0;
@@ -42,171 +52,194 @@ function LandingPage({ onStart }) {
           background-repeat: no-repeat;
         }
 
-        /* Large screens background anchor */
-        @media (min-width: 1024px) {
-          .lp-bg {
-            background-position: right top;
-          }
-        }
-
-        /* Overlay to darken the background slightly */
+        /* Overlay with portrait-friendly gradient */
         .lp-bg-overlay {
           position: absolute;
           inset: 0;
           z-index: 1;
-          background: linear-gradient(to right, rgba(7,4,14,0.95) 0%, rgba(7,4,14,0.7) 40%, transparent 100%);
+          background: linear-gradient(
+            180deg,
+            rgba(7,4,14,0.75) 0%,
+            rgba(7,4,14,0.4) 30%,
+            rgba(7,4,14,0.35) 55%,
+            rgba(7,4,14,0.85) 80%,
+            rgba(7,4,14,0.97) 100%
+          );
           pointer-events: none;
         }
 
-        /* Bottom gradient to blend into gallery section */
-        .lp-bg-bottom-overlay {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 50%;
-          z-index: 2;
-          background: linear-gradient(to top, rgba(7,4,14,1) 0%, rgba(7,4,14,0.6) 40%, transparent 100%);
-          pointer-events: none;
-        }
-
-        /* Navigation */
+        /* MINIMAL CENTERED HEADER */
         .lp-nav {
           position: relative;
           z-index: 10;
           display: flex;
-          justify-content: space-between;
+          justify-content: center;
           align-items: center;
-          padding: 24px clamp(16px, 5vw, 60px);
+          padding: 20px 20px;
+          background: rgba(7,4,14,0.5);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
         .lp-logo {
-          display: flex;
-          align-items: center;
-          gap: 12px;
           font-family: 'Outfit', sans-serif;
           font-size: 22px;
-          font-weight: 700;
+          font-weight: 800;
           color: white;
           text-decoration: none;
+          letter-spacing: 1.5px;
+          text-align: center;
+          white-space: nowrap;
+          text-transform: uppercase;
         }
 
-        .lp-links {
-          display: flex;
-          gap: 40px;
+        .lp-logo-sparkle {
+          background: linear-gradient(135deg, #a78bfa 0%, #f472b6 50%, #818cf8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
         }
 
-        .lp-links a {
+        /* Gallery Link */
+        .lp-nav-gallery {
+          position: absolute;
+          right: 16px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 10px;
+          padding: 8px 16px;
           color: #cbd5e1;
-          text-decoration: none;
-          font-size: 14px;
-          font-weight: 500;
-          transition: color 0.3s;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.8px;
           cursor: pointer;
-        }
-        
-        .lp-links a:hover {
-          color: white;
-        }
-
-        .lp-hamburger {
-          display: none;
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          min-width: 44px;
-          min-height: 44px;
+          transition: all 0.3s ease;
+          text-transform: uppercase;
+          min-height: 38px;
+          display: flex;
           align-items: center;
-          justify-content: center;
+          gap: 5px;
+          -webkit-tap-highlight-color: transparent;
+        }
+        .lp-nav-gallery:hover {
+          background: rgba(255,255,255,0.12);
+          color: white;
+          border-color: rgba(168,85,247,0.3);
         }
 
-        /* Main Content Area */
-        .lp-main-content {
+        /* HERO SECTION - PORTRAIT OPTIMIZED */
+        .lp-hero {
           position: relative;
           z-index: 10;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-        }
-
-        /* Hero Content */
-        .lp-hero {
-          padding: 20px clamp(16px, 5vw, 60px);
-          max-width: 800px;
+          padding: 36px 24px 20px;
+          text-align: center;
         }
 
         .lp-hero-title {
           font-family: 'Outfit', sans-serif;
-          font-size: clamp(48px, 6vw, 84px);
+          font-size: clamp(44px, 12vw, 62px);
           font-weight: 900;
           line-height: 1.05;
-          margin: 0;
+          margin: 0 auto;
           text-transform: uppercase;
-          text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+          letter-spacing: -0.5px;
+          text-shadow: 0 4px 24px rgba(0,0,0,0.5);
+          max-width: 480px;
+        }
+
+        .lp-hero-line {
+          display: block;
+          margin-bottom: 2px;
         }
 
         .lp-gradient-text {
-          background: linear-gradient(to right, #3b82f6 0%, #a855f7 50%, #ec4899 100%);
+          background: linear-gradient(135deg, #818cf8 0%, #a855f7 40%, #ec4899 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          background-clip: text;
+          display: inline-block;
         }
 
         .lp-hero-desc {
-          margin-top: 24px;
-          font-size: 18px;
-          color: #cbd5e1;
+          margin-top: 18px;
+          font-size: 16px;
+          color: #94a3b8;
           line-height: 1.6;
-          max-width: 500px;
+          max-width: 340px;
+          margin-left: auto;
+          margin-right: auto;
+          letter-spacing: 0.2px;
         }
 
-        /* Features */
-        .lp-features {
+        /* ASTRONAUT VISUAL SECTION */
+        .lp-visual-section {
+          position: relative;
+          z-index: 10;
+          flex: 1;
           display: flex;
-          flex-wrap: wrap;
-          gap: clamp(16px, 3vw, 30px);
-          padding: 0 clamp(16px, 5vw, 60px);
-          margin-top: 40px;
+          align-items: flex-start;
+          justify-content: center;
+          padding: 10px 16px 16px;
+          min-height: 320px;
         }
 
-        .lp-feature-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-          gap: 12px;
-          color: #e2e8f0;
-        }
-
-        .lp-feature-icon {
-          width: 32px;
-          height: 32px;
+        .lp-astronaut-container {
+          position: relative;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 8px;
-          border: 1px solid rgba(255,255,255,0.2);
-          padding: 8px;
-          background: rgba(255,255,255,0.03);
         }
 
-        .lp-feature-text {
-          font-size: 12px;
-          font-weight: 600;
-          letter-spacing: 0.5px;
+        /* Glow behind astronaut */
+        .lp-astronaut-glow {
+          position: absolute;
+          width: 280px;
+          height: 280px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(139,92,246,0.25) 0%, rgba(99,102,241,0.1) 40%, transparent 70%);
+          filter: blur(40px);
+          pointer-events: none;
         }
 
-        /* Gallery with Marquee Auto-Scroll */
+        .lp-astronaut-img {
+          position: relative;
+          max-width: 100%;
+          height: auto;
+          max-height: 440px;
+          object-fit: contain;
+          object-position: center top;
+          filter: drop-shadow(0 10px 40px rgba(147, 51, 234, 0.35));
+          animation: lpFloatAstronaut 4s ease-in-out infinite;
+        }
+
+        @keyframes lpFloatAstronaut {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+
+        /* CHARACTER PREVIEW CAROUSEL - ENLARGED */
         .lp-gallery-section {
           position: relative;
           z-index: 10;
-          padding: 40px 0; /* remove horizontal padding for full bleed */
-          overflow: hidden; /* Hide scrollbar for marquee */
-          display: flex;
+          padding: 24px 0;
+          overflow: hidden;
+          background: rgba(0,0,0,0.25);
+          border-top: 1px solid rgba(255,255,255,0.05);
+          border-bottom: 1px solid rgba(255,255,255,0.05);
         }
 
-        /* Marquee Animation */
+        .lp-gallery-label {
+          text-align: center;
+          font-family: 'Outfit', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 2px;
+          text-transform: uppercase;
+          color: #64748b;
+          margin-bottom: 16px;
+        }
+
         @keyframes scrollMarquee {
           0% { transform: translateX(0); }
           100% { transform: translateX(calc(-100% / 6)); }
@@ -216,10 +249,10 @@ function LandingPage({ onStart }) {
           display: flex;
           width: max-content;
           gap: 0;
-          animation: scrollMarquee 25s linear infinite;
+          animation: scrollMarquee 35s linear infinite;
+          padding: 0 8px;
         }
-        
-        /* Pause on hover */
+
         .lp-gallery-grid:hover {
           animation-play-state: paused;
         }
@@ -227,80 +260,327 @@ function LandingPage({ onStart }) {
         .lp-gallery-card {
           border-radius: 16px;
           overflow: hidden;
-          width: 160px;
-          height: 220px;
+          width: 215px;
+          height: 290px;
           flex-shrink: 0;
-          border: 1px solid rgba(255,255,255,0.1);
-          transition: transform 0.3s ease, border-color 0.3s ease;
-          background: #000;
+          border: 1.5px solid rgba(255,255,255,0.1);
+          transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+          background: linear-gradient(135deg, #0a0612 0%, #1a0f2e 100%);
           margin-right: 16px;
+          cursor: pointer;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+          position: relative;
+        }
+
+        .lp-gallery-card::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 60px;
+          background: linear-gradient(to top, rgba(10,6,18,0.7), transparent);
+          pointer-events: none;
+          border-radius: 0 0 16px 16px;
         }
 
         .lp-gallery-card:hover {
-          transform: translateY(-5px);
-          border-color: rgba(236, 72, 153, 0.5);
+          transform: translateY(-6px) scale(1.02);
+          border-color: rgba(168, 85, 247, 0.5);
+          box-shadow: 0 16px 44px rgba(147, 51, 234, 0.35);
         }
 
         .lp-gallery-card img {
           width: 100%;
-          height: 118%; /* Crop bottom 18% to hide any baked-in text */
+          height: 100%;
           object-fit: cover;
           object-position: center top;
           display: block;
         }
 
-        /* CTA Section */
+        /* CTA SECTION */
         .lp-cta-wrapper {
           position: relative;
           z-index: 10;
           display: flex;
           justify-content: center;
-          padding: 20px 16px 60px;
+          align-items: center;
+          padding: 24px 20px 40px;
+          flex-direction: column;
+          gap: 14px;
         }
 
         .lp-btn-start {
-          background: linear-gradient(90deg, #1d4ed8 0%, #9333ea 50%, #db2777 100%);
+          background: linear-gradient(135deg, #6366f1 0%, #9333ea 45%, #db2777 100%);
           border: none;
           border-radius: 50px;
-          padding: 20px clamp(32px, 8vw, 80px);
+          padding: 18px 60px;
           color: white;
-          font-size: clamp(16px, 4vw, 24px);
+          font-size: 18px;
           font-weight: 800;
           letter-spacing: 1.5px;
           display: flex;
           align-items: center;
+          justify-content: center;
           gap: 12px;
           cursor: pointer;
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-          box-shadow: 0 10px 30px rgba(147, 51, 234, 0.3);
+          transition: all 0.3s ease;
+          box-shadow: 0 12px 36px rgba(147, 51, 234, 0.45);
           white-space: nowrap;
-          max-width: calc(100vw - 32px);
-          box-sizing: border-box;
+          width: 100%;
+          max-width: 340px;
+          min-height: 62px;
+          font-family: 'Outfit', sans-serif;
+          text-transform: uppercase;
+          position: relative;
+          overflow: hidden;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .lp-btn-start::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+          transition: left 0.5s ease;
+        }
+
+        .lp-btn-start:hover::before {
+          left: 100%;
+        }
+
+        .lp-btn-start:active {
+          transform: scale(0.97);
         }
 
         .lp-btn-start:hover {
-          transform: scale(1.05);
-          box-shadow: 0 15px 40px rgba(219, 39, 119, 0.5);
+          transform: translateY(-3px);
+          box-shadow: 0 20px 52px rgba(219, 39, 119, 0.5);
         }
 
-        /* Responsive */
-        @media (max-width: 900px) {
-          .lp-links { display: none; }
-          .lp-hamburger { display: flex; }
-          .lp-feature-item::after { display: none; }
-          .lp-bg-overlay { background: rgba(7,4,14,0.8); }
+        .lp-btn-icon {
+          width: 20px;
+          height: 20px;
         }
 
-        @media (max-width: 600px) {
-          .lp-hero-title { font-size: clamp(28px, 8vw, 40px); }
-          .lp-gallery-card { width: 140px; height: 190px; }
+        /* FOOTER */
+        .lp-footer {
+          position: relative;
+          z-index: 10;
+          text-align: center;
+          padding: 0 20px 24px;
+          color: #334155;
+          font-size: 11px;
+          letter-spacing: 0.5px;
         }
 
-        @media (max-width: 375px) {
-          .lp-hero-title { font-size: clamp(24px, 7vw, 32px); }
-          .lp-gallery-card { width: 120px; height: 165px; }
-          .lp-btn-start { padding: 16px 24px; font-size: 15px; }
-          .lp-hero-desc { font-size: 15px; }
+        /* ================================ */
+        /* PORTRAIT-FIRST RESPONSIVE DESIGN */
+        /* ================================ */
+
+        /* Standard portrait tablet (e.g., iPad) */
+        @media (max-width: 768px) {
+          .lp-nav {
+            padding: 18px 16px;
+          }
+
+          .lp-logo {
+            font-size: 20px;
+          }
+
+          .lp-hero {
+            padding: 30px 20px 16px;
+          }
+
+          .lp-hero-title {
+            font-size: clamp(40px, 11vw, 54px);
+          }
+
+          .lp-hero-desc {
+            font-size: 15px;
+          }
+
+          .lp-visual-section {
+            min-height: 280px;
+            padding: 8px 16px 12px;
+          }
+
+          .lp-astronaut-img {
+            max-height: 400px;
+          }
+
+          .lp-gallery-card {
+            width: 195px;
+            height: 265px;
+            margin-right: 14px;
+          }
+
+          .lp-cta-wrapper {
+            padding: 20px 16px 36px;
+          }
+
+          .lp-btn-start {
+            padding: 16px 48px;
+            font-size: 17px;
+            max-width: 300px;
+            min-height: 58px;
+          }
+        }
+
+        /* Smaller phones */
+        @media (max-width: 480px) {
+          .lp-nav {
+            padding: 16px 12px;
+          }
+
+          .lp-logo {
+            font-size: 18px;
+            letter-spacing: 1px;
+          }
+
+          .lp-nav-gallery {
+            font-size: 11px;
+            padding: 7px 12px;
+            right: 12px;
+          }
+
+          .lp-hero {
+            padding: 24px 16px 14px;
+          }
+
+          .lp-hero-title {
+            font-size: clamp(34px, 10vw, 46px);
+            line-height: 1.08;
+          }
+
+          .lp-hero-desc {
+            font-size: 14px;
+            margin-top: 14px;
+            max-width: 300px;
+          }
+
+          .lp-visual-section {
+            min-height: 240px;
+            padding: 6px 12px 10px;
+          }
+
+          .lp-astronaut-img {
+            max-height: 340px;
+          }
+
+          .lp-astronaut-glow {
+            width: 220px;
+            height: 220px;
+          }
+
+          .lp-gallery-section {
+            padding: 18px 0;
+          }
+
+          .lp-gallery-card {
+            width: 175px;
+            height: 240px;
+            margin-right: 12px;
+            border-radius: 14px;
+          }
+
+          .lp-cta-wrapper {
+            padding: 18px 12px 32px;
+            gap: 12px;
+          }
+
+          .lp-btn-start {
+            padding: 15px 40px;
+            font-size: 16px;
+            max-width: 270px;
+            min-height: 54px;
+          }
+        }
+
+        /* Very small phones */
+        @media (max-width: 380px) {
+          .lp-hero-title {
+            font-size: clamp(30px, 9vw, 40px);
+          }
+
+          .lp-astronaut-img {
+            max-height: 280px;
+          }
+
+          .lp-gallery-card {
+            width: 155px;
+            height: 215px;
+          }
+        }
+
+        /* LANDSCAPE FALLBACK */
+        @media (orientation: landscape) and (max-height: 600px) {
+          .lp-hero {
+            padding: 14px 20px 10px;
+          }
+
+          .lp-hero-title {
+            font-size: clamp(26px, 5vw, 34px);
+          }
+
+          .lp-hero-desc {
+            font-size: 12px;
+            display: none;
+          }
+
+          .lp-visual-section {
+            min-height: 140px;
+            padding: 6px;
+          }
+
+          .lp-astronaut-img {
+            max-height: 170px;
+          }
+
+          .lp-gallery-section {
+            padding: 10px 0;
+          }
+
+          .lp-gallery-card {
+            width: 120px;
+            height: 165px;
+            margin-right: 10px;
+          }
+
+          .lp-cta-wrapper {
+            padding: 10px 16px 14px;
+          }
+
+          .lp-btn-start {
+            padding: 12px 36px;
+            font-size: 14px;
+            max-width: 200px;
+            min-height: 46px;
+          }
+        }
+
+        /* Touch Device Optimizations */
+        @supports (padding: max(0px)) {
+          .lp-nav {
+            padding-top: max(16px, env(safe-area-inset-top));
+            padding-left: max(16px, env(safe-area-inset-left));
+            padding-right: max(16px, env(safe-area-inset-right));
+          }
+
+          .lp-cta-wrapper {
+            padding-bottom: max(36px, env(safe-area-inset-bottom));
+          }
+        }
+
+        /* Touch Target Optimization */
+        .lp-nav-gallery,
+        .lp-btn-start {
+          min-height: 44px;
+          min-width: 44px;
+          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
 
@@ -308,118 +588,58 @@ function LandingPage({ onStart }) {
         {/* Backgrounds */}
         <div className="lp-bg" />
         <div className="lp-bg-overlay" />
-        <div className="lp-bg-bottom-overlay" />
 
-        {/* Header */}
+        {/* Header — Minimal + Centered Brand */}
         <nav className="lp-nav">
-          <a href="#" className="lp-logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
-              <circle cx="12" cy="13" r="3" />
-            </svg>
-            AI Photo Booth
-          </a>
-          
-          <div className="lp-links">
-            <a>Features</a>
-            <a>How It Works</a>
-            <a>Gallery</a>
-            <a>Contact</a>
-          </div>
+          <span className="lp-logo">
+            <span className="lp-logo-sparkle">AI Photo Booth</span>
+          </span>
 
-          <button className="lp-hamburger" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
+          <button
+            className="lp-nav-gallery"
+            onClick={() => navigate('/gallery')}
+          >
+            🖼 Gallery
           </button>
         </nav>
 
-        <div className="lp-main-content">
-          {/* Hero Section */}
-          <div className="lp-hero">
-            <h1 className="lp-hero-title">
-              BE ANYONE.<br />ANYWHERE.<br />
-              <span className="lp-gradient-text">AI MAKES IT POSSIBLE.</span>
-            </h1>
-            <p className="lp-hero-desc">
-              Step into new roles, new worlds and new versions of yourself with AI Photo Booth.
-            </p>
-          </div>
+        {/* Hero Section */}
+        <div className="lp-hero">
+          <h1 className="lp-hero-title">
+            <span className="lp-hero-line">BE ANYONE.</span>
+            <span className="lp-hero-line">ANYWHERE.</span>
+            <span className="lp-hero-line">
+              <span className="lp-gradient-text">AI MAKES IT</span>
+            </span>
+            <span className="lp-hero-line">
+              <span className="lp-gradient-text">POSSIBLE.</span>
+            </span>
+          </h1>
+          <p className="lp-hero-desc">
+            Step into new roles, new worlds and new versions of yourself with AI Photo Booth.
+          </p>
+        </div>
 
-          {/* Features Row */}
-          <div className="lp-features">
-            <div className="lp-feature-item">
-              <div className="lp-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 2a10 10 0 1 0 10 10H12V2Z" />
-                  <path d="M12 12 2.1 12" />
-                  <path d="M12 12 18.5 5.5" />
-                </svg>
-              </div>
-              <span className="lp-feature-text">AI Powered</span>
-            </div>
-            
-            <div className="lp-feature-item">
-              <div className="lp-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                </svg>
-              </div>
-              <span className="lp-feature-text">High Quality</span>
-            </div>
-
-            <div className="lp-feature-item">
-              <div className="lp-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-                  <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-                  <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-                  <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-                  <circle cx="12" cy="12" r="3" />
-                  <path d="M12 15v.01" />
-                </svg>
-              </div>
-              <span className="lp-feature-text">Face Preserved</span>
-            </div>
-
-            <div className="lp-feature-item">
-              <div className="lp-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" />
-                  <path d="m14 7 3 3" />
-                  <path d="M5 6v4" />
-                  <path d="M19 14v4" />
-                  <path d="M10 2v2" />
-                  <path d="M7 8H3" />
-                  <path d="M21 16h-4" />
-                  <path d="M11 3H9" />
-                </svg>
-              </div>
-              <span className="lp-feature-text">Instant Effect</span>
-            </div>
-
-            <div className="lp-feature-item">
-              <div className="lp-feature-icon">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                  <polyline points="16 6 12 2 8 6" />
-                  <line x1="12" y1="2" x2="12" y2="15" />
-                </svg>
-              </div>
-              <span className="lp-feature-text">Share & Email</span>
-            </div>
+        {/* Astronaut Visual Section */}
+        <div className="lp-visual-section">
+          <div className="lp-astronaut-container">
+            <div className="lp-astronaut-glow" />
+            <img
+              src="/assets/images/astronaut.png"
+              alt="AI Photo Booth Astronaut"
+              className="lp-astronaut-img"
+              onError={(e) => e.target.src = '/assets/templates/male_astronaut.jpg'}
+            />
           </div>
         </div>
 
-        {/* Gallery with Marquee Auto-Scroll */}
+        {/* Character Preview Carousel */}
         <div className="lp-gallery-section">
+          <div className="lp-gallery-label">Choose Your Character</div>
           <div className="lp-gallery-grid">
-            {/* Render 6 sets of items for seamless infinite scroll */}
             {[...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems].map((item, idx) => (
               <div key={idx} className="lp-gallery-card">
-                <img src={item.img} alt={item.name} />
+                <img src={item.img} alt={item.name} loading="lazy" />
               </div>
             ))}
           </div>
@@ -428,12 +648,17 @@ function LandingPage({ onStart }) {
         {/* CTA Section */}
         <div className="lp-cta-wrapper">
           <button className="lp-btn-start" onClick={onStart}>
-            START NOW
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <span>START NOW</span>
+            <svg className="lp-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M5 12h14" />
               <path d="m12 5 7 7-7 7" />
             </svg>
           </button>
+        </div>
+
+        {/* Footer */}
+        <div className="lp-footer">
+          ✦ Powered by AI • Premium Experience ✦
         </div>
       </div>
     </>
