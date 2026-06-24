@@ -98,36 +98,68 @@ const DEFAULT_LOADING = {
   ],
 };
 
-function getTemplateConfig(templateName) {
-  const key = templateName?.toLowerCase().trim();
-  const config = (key && TEMPLATE_LOADING[key]) || DEFAULT_LOADING;
+// Pulls a usable "name" out of templateName regardless of whether the caller passed
+// a plain string ("King") or the full template object ({ id, name, prompt, ... })
+// that TemplateScreen's onSelect hands off. This makes the lookup resilient to
+// whichever shape the parent component is currently forwarding.
+function extractTemplateKey(templateName) {
+  if (!templateName) return '';
+  if (typeof templateName === 'string') return templateName.toLowerCase().trim();
+  if (typeof templateName === 'object') {
+    const candidate = templateName.name || templateName.title || templateName.prompt || '';
+    return String(candidate).toLowerCase().trim();
+  }
+  return '';
+}
 
-  // Debug logging — trace exactly what template name arrived and what was matched.
-  console.log('Template received by Loading Screen:', templateName);
-  console.log('Normalized key used for lookup:', key);
-  console.log('Loading Config selected:', config === DEFAULT_LOADING ? 'DEFAULT_LOADING (no match found!)' : key);
+function getTemplateConfig(templateName) {
+  const rawKey = extractTemplateKey(templateName);
+  // Exact match first, then fall back to substring match (handles cases like
+  // "Royal King" or "King Template" that contain the key but aren't an exact match).
+  let matchedKey = TEMPLATE_LOADING[rawKey] ? rawKey : '';
+  if (!matchedKey && rawKey) {
+    matchedKey = Object.keys(TEMPLATE_LOADING).find((k) => rawKey.includes(k)) || '';
+  }
+  const config = (matchedKey && TEMPLATE_LOADING[matchedKey]) || DEFAULT_LOADING;
+
+  // Debug logging — trace exactly what arrived, what key we derived from it, and what matched.
+  console.log('🟣 [LoadingScreen] Raw templateName prop received:', templateName);
+  console.log('🟣 [LoadingScreen] Normalized lookup key:', rawKey);
+  console.log('🟣 [LoadingScreen] Matched template key:', matchedKey || '(none)');
+  console.log('🟣 [LoadingScreen] Loading Config in use:', config === DEFAULT_LOADING ? 'DEFAULT_LOADING (no match found — check what is being passed in!)' : matchedKey);
 
   return config;
 }
 
 function LoadingScreen({ userName, templateName }) {
-  const config = useMemo(() => getTemplateConfig(templateName), [templateName]);
+  // Stable string key — used as the effect dependency instead of templateName itself,
+  // so that if the parent re-renders and passes a NEW object reference for the SAME
+  // template (very common with object props), this won't be treated as a change and
+  // won't restart the rotation timer or reset msgIdx back to 0.
+  const stableKey = extractTemplateKey(templateName);
+  const config = useMemo(() => getTemplateConfig(templateName), [stableKey]);
 
-  // Debug: confirm the LoadingScreen actually received a templateName prop at all.
+  // Debug: confirm the LoadingScreen actually received a usable templateName prop.
   useEffect(() => {
-    console.log('Template received by Loading Screen:', templateName);
-    console.log('Loading Config:', config);
-    if (!templateName) {
-      console.warn('LoadingScreen received no templateName prop — check the parent component / navigation flow.');
+    console.log('🟣 [LoadingScreen] templateName prop (raw):', templateName);
+    console.log('🟣 [LoadingScreen] stableKey derived:', stableKey);
+    console.log('🟣 [LoadingScreen] Loading Config in use:', config);
+    if (!stableKey) {
+      console.warn('⚠️ [LoadingScreen] No usable template name/key found in the templateName prop — check what the parent component is passing in. Falling back to DEFAULT_LOADING.');
+    } else if (config.title === DEFAULT_LOADING.title) {
+      console.warn('⚠️ [LoadingScreen] stableKey was "' + stableKey + '" but it did not match king/astronaut/avenger — check spelling/casing coming from the parent.');
     }
-  }, [templateName, config]);
+  }, [stableKey]);
 
   const [msgIdx, setMsgIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [progress, setProgress] = useState(0);
 
-  // Rotate messages with fade — every 3.5s, matching the 3-4s cadence for immersive reading
+  // Rotate messages with fade — every 3.5s. Depends only on stableKey (a plain string),
+  // NOT on templateName or config object references, so parent re-renders/polling can't
+  // restart this timer before it completes a full 3.5s cycle.
   useEffect(() => {
+    console.log('🟣 [LoadingScreen] Rotation timer (re)started for key:', stableKey || '(default)');
     const t = setInterval(() => {
       setVisible(false);
       setTimeout(() => {
@@ -136,7 +168,7 @@ function LoadingScreen({ userName, templateName }) {
       }, 400);
     }, 3500);
     return () => clearInterval(t);
-  }, [config]);
+  }, [stableKey]);
 
   useEffect(() => {
     const t = setInterval(() => setProgress((p) => p >= 90 ? 90 : p + Math.random() * 6 + 2), 750);
@@ -267,6 +299,28 @@ function LoadingScreen({ userName, templateName }) {
         ))}
 
         <div style={{ width: '100%', maxWidth: '440px', position: 'relative', zIndex: 10 }}>
+          {/* TEMP DEBUG BANNER — remove once templateName is confirmed flowing correctly.
+              Shows exactly what this component received, directly on screen. */}
+          <div style={{
+            background: 'rgba(0,0,0,0.6)', border: '1px solid #f59e0b',
+            borderRadius: '10px', padding: '10px 14px', marginBottom: '14px',
+            fontSize: '12px', fontFamily: 'monospace', color: '#fbbf24',
+            wordBreak: 'break-word', textAlign: 'left',
+          }}>
+            <div>🐛 DEBUG — templateName prop received:</div>
+            <div style={{ color: '#fff', marginTop: '4px' }}>
+              {templateName === undefined
+                ? 'undefined (prop not passed at all)'
+                : templateName === null
+                ? 'null'
+                : typeof templateName === 'object'
+                ? JSON.stringify(templateName)
+                : `"${templateName}" (type: ${typeof templateName})`}
+            </div>
+            <div style={{ marginTop: '4px' }}>stableKey derived: <span style={{ color: '#fff' }}>{stableKey || '(empty)'}</span></div>
+            <div style={{ marginTop: '4px' }}>Config matched: <span style={{ color: '#fff' }}>{config.title}</span></div>
+          </div>
+
           {/* Outer glow */}
           <div style={{
             position: 'absolute', inset: '-2px', borderRadius: '26px',
