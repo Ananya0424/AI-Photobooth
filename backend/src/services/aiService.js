@@ -128,7 +128,7 @@ const generateFaceSwap = async (sourceImageUrl, targetTemplateUrl, prompt, selec
           model: modelName,
           prompt: imagePrompt,
           n: 1,
-          size: "1024x1024",
+          size: "512x512",
         };
 
         // Model-specific overrides
