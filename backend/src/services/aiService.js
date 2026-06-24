@@ -22,7 +22,7 @@ const { enhanceImage } = require("./imageEnhancer");
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GRADIO_TIMEOUT_MS = 60_000; // 60 s per Gradio call (cold-start can be slow)
-const OPENAI_TIMEOUT_MS = 90_000; // 90 s for image generation
+const OPENAI_TIMEOUT_MS = 300_000; // 5 min for image generation
 
 // ─── Singleton OpenAI client ──────────────────────────────────────────────────
 
