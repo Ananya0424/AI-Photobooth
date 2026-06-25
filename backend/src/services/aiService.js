@@ -245,21 +245,21 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
     console.log(`${label} Generating image — attempt ${attempt}/${maxAttempts} (model: ${modelName})`);
     console.log(`${label} Prompt: "${fullPrompt.substring(0, 120)}..."`);
 
-    // FIXED: gpt-image-2 uses b64_json response format; dall-e-3 uses url
-    // gpt-image-2 does NOT support quality/style params (those are dall-e-3 only)
+    // gpt-image-2: only model + prompt + n are valid. No size, quality, style, response_format.
+    // dall-e-3/dall-e-2: size is required; dall-e-3 also accepts quality + style.
     const params = {
       model:  modelName,
       prompt: fullPrompt,
       n:      1,
-      size:   "1024x1024",
     };
 
     if (modelName === "dall-e-3") {
+      params.size    = "1024x1024";
       params.quality = "hd";
       params.style   = "natural";
+    } else if (modelName === "dall-e-2") {
+      params.size = "1024x1024";
     }
-    // NOTE: gpt-image-2 always returns b64_json automatically.
-    // Do NOT send response_format — it is not a valid parameter for this model.
 
     try {
       const response = await withTimeout(
