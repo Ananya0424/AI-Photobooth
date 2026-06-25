@@ -286,7 +286,10 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
 
     if (modelName.startsWith("gpt-image")) {
       params.size    = "1024x1024"; // generate at a real resolution; we downscale to 512x512 later in Cloudinary for crisper results than generating natively small
-      params.quality = "high";      // low | medium | high — "high" fixes the blur
+      // [Performance Test] quality temporarily set to "low" for benchmarking —
+      // was "high". Resolution (size) and n are UNCHANGED. Revert to "high"
+      // once the benchmark run is complete.
+      params.quality = "low";      // low | medium | high — benchmark test value
     } else if (modelName === "dall-e-3") {
       params.size    = "1024x1024";
       params.quality = "hd";
@@ -295,12 +298,21 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
       params.size = "1024x1024";
     }
 
+    // [Performance Test] capture generation start time
+    const perfStart = Date.now();
+    const perfStartISO = new Date(perfStart).toISOString();
+
     try {
       const response = await withTimeout(
         client.images.generate(params),
         OPENAI_TIMEOUT_MS,
         "OpenAI image generation"
       );
+
+      // [Performance Test] capture generation end time / duration
+      const perfEnd = Date.now();
+      const perfEndISO = new Date(perfEnd).toISOString();
+      const perfDurationSec = ((perfEnd - perfStart) / 1000).toFixed(2);
 
       const item = response?.data?.[0];
       if (!item) throw new Error("OpenAI returned an empty response");
@@ -314,6 +326,33 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
 
       const { width, height } = await probeDimensions(imageUrl);
       console.log("OpenAI Output Resolution:", width, height);
+
+      // [Performance Test] output file size — from b64_json bytes, or fetched
+      // from the URL for dall-e-3/2 responses. Never throws.
+      let outputFileSizeKB = "unknown";
+      if (item.b64_json) {
+        outputFileSizeKB = (Buffer.from(item.b64_json, "base64").length / 1024).toFixed(2);
+      } else if (item.url) {
+        try {
+          const sizeRes = await fetch(item.url);
+          const sizeBuf = Buffer.from(await sizeRes.arrayBuffer());
+          outputFileSizeKB = (sizeBuf.length / 1024).toFixed(2);
+        } catch (sizeErr) {
+          console.warn(`${label} Could not determine output file size: ${sizeErr.message}`);
+        }
+      }
+
+      // [Performance Test] structured benchmark log line
+      console.log(
+        `[Performance Test] Quality: ${params.quality || "default"} ` +
+        `Resolution: ${params.size || "default"} ` +
+        `Images: ${params.n} ` +
+        `Generation Start: ${perfStartISO} ` +
+        `Generation End: ${perfEndISO} ` +
+        `Generation Duration: ${perfDurationSec} seconds ` +
+        `Output Dimensions: ${width}x${height} ` +
+        `Output File Size: ${outputFileSizeKB} KB`
+      );
 
       console.log(`${label} Image generated successfully on attempt ${attempt}.`);
       return imageUrl;
