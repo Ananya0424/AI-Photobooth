@@ -7,7 +7,7 @@ const { generateFaceSwap, isMockMode } = require("../services/aiService");
 const { generateQRCode } = require("../utils/qrCodeGenerator");
 const { getTemplatesByGender, getTemplateById } = require("../utils/stylePrompts");
 const { enhancePrompt } = require("../services/openaiService");
-const { sendPortraitEmail } = require("../services/emailService");
+const { sendPortraitEmailResend } = require("../services/resendemailservice");
 
 /**
  * Create a new photobooth session
@@ -491,7 +491,13 @@ const shareImage = async (req, res) => {
     if (!session.generatedImageUrl) return res.status(400).json({ success: false, error: 'No generated image available yet' });
     if (!session.email) return res.status(400).json({ success: false, error: 'No email address on file' });
 
-    await sendPortraitEmail(session.email, session.userName, session.generatedImageUrl);
+    const emailResult = await sendPortraitEmailResend(session.email, session.userName, session.generatedImageUrl);
+
+    if (!emailResult.success) {
+      console.error(`[Session] ${sessionId} - Failed to share portrait: ${emailResult.error}`);
+      return res.status(500).json({ success: false, error: emailResult.error || 'Failed to send email' });
+    }
+
     console.log(`[Session] ${sessionId} - Portrait shared to ${session.email}`);
     return res.json({ success: true, message: 'Portrait sent to your email!' });
   } catch (error) {
