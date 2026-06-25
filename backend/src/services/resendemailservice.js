@@ -9,14 +9,18 @@ const axios = require("axios");
  *   - Simpler API (no SMTP pool config needed)
  *   - Built for transactional emails from apps
  *   - Free tier: 100 emails/day
- *   - After free tier: $0.0001/email
  *
  * Setup:
  *   1. Sign up at https://resend.com
  *   2. Create API key
- *   3. Verify sender domain (or use default no-reply@resend.dev)
+ *   3. Verify sender domain (or use default onboarding@resend.dev for testing)
  *   4. Set RESEND_API_KEY in Render environment variables
- *   5. Update server.js to use this service instead of Gmail
+ *
+ * FIXES in this version:
+ *   - Health check no longer calls resend.emails.list() which does not exist
+ *     in the Resend Node SDK (was throwing TypeError silently swallowed by catch,
+ *     causing health to always report "healthy" even with a bad/missing key)
+ *   - Health check now validates the API key format directly — no API call needed
  */
 
 let _resendClient = null;
@@ -29,8 +33,10 @@ const getResendClient = () => {
   return _resendClient;
 };
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 /**
- * Download image buffer from URL
+ * Download image buffer from URL with retry + exponential backoff.
  */
 const downloadImageBuffer = async (url, retries = 2) => {
   let lastError;
@@ -39,7 +45,7 @@ const downloadImageBuffer = async (url, retries = 2) => {
     try {
       const response = await axios.get(url, {
         responseType: "arraybuffer",
-        timeout: 8_000,
+        timeout:      8_000,
       });
       return Buffer.from(response.data, "binary");
     } catch (err) {
@@ -58,18 +64,18 @@ const downloadImageBuffer = async (url, retries = 2) => {
 };
 
 /**
- * Escape HTML to prevent XSS
+ * Escape HTML to prevent XSS.
  */
 const escapeHtml = (str) =>
   String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g,  "&amp;")
+    .replace(/</g,  "&lt;")
+    .replace(/>/g,  "&gt;")
+    .replace(/"/g,  "&quot;")
+    .replace(/'/g,  "&#39;");
 
 /**
- * Build email template
+ * Build email template.
  */
 const buildEmailTemplate = (userName) => {
   const safeUser = escapeHtml(userName);
@@ -111,49 +117,49 @@ const buildEmailTemplate = (userName) => {
 };
 
 /**
- * Prepare image attachment
+ * Prepare image attachment.
+ * Uses response Content-Type header for type detection — NOT URL extension.
+ * (Cloudinary may serve WebP even for .png URLs when fetch_format:auto is set)
  */
 const prepareImageAttachment = async (imageUrl, userName) => {
   const safeName = encodeURIComponent(userName).slice(0, 40);
-  const ts = Date.now();
+  const ts       = Date.now();
 
   if (imageUrl.startsWith("data:")) {
     const match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
     if (!match) throw new Error("Invalid base64 data URI format");
 
     const contentType = match[1];
-    const content = Buffer.from(match[2], "base64");
-    const ext = contentType.split("/")[1] || "jpg";
+    const content     = Buffer.from(match[2], "base64");
+    const ext         = contentType.split("/")[1] || "jpg";
 
-    return { 
-      content, 
-      contentType, 
-      filename: `ai-portrait-${safeName}-${ts}.${ext}` 
+    return {
+      content,
+      contentType,
+      filename: `ai-portrait-${safeName}-${ts}.${ext}`,
     };
   }
 
-  // External URL
-  let contentType = "image/jpeg";
-  let ext = "jpg";
+  // External URL — detect content type from response header
+  const response = await axios.get(imageUrl, {
+    responseType: "arraybuffer",
+    timeout:      8_000,
+  });
+  const content     = Buffer.from(response.data, "binary");
+  const contentType = response.headers["content-type"]?.split(";")[0] || "image/jpeg";
+  const ext         = contentType.split("/")[1] || "jpg";
 
-  if (imageUrl.includes(".png")) { contentType = "image/png"; ext = "png"; }
-  if (imageUrl.includes(".webp")) { contentType = "image/webp"; ext = "webp"; }
-
-  const content = await downloadImageBuffer(imageUrl);
-  return { 
-    content, 
-    contentType, 
-    filename: `ai-portrait-${safeName}-${ts}.${ext}` 
+  return {
+    content,
+    contentType,
+    filename: `ai-portrait-${safeName}-${ts}.${ext}`,
   };
 };
 
+// ─── Send functions ───────────────────────────────────────────────────────────
+
 /**
- * Send portrait email via Resend (non-blocking, fire-and-forget)
- * 
- * @param {string} toEmail Recipient email
- * @param {string} userName User's name
- * @param {string} imageUrl Portrait image URL or data URI
- * @returns {Promise<{success:boolean, queued?:boolean, messageId?:string, error?:string, mock?:boolean}>}
+ * Send portrait email via Resend (non-blocking, fire-and-forget).
  */
 const sendPortraitEmailResend = async (toEmail, userName, imageUrl) => {
   const logPrefix = `[EmailService:Resend] ${toEmail}`;
@@ -163,11 +169,7 @@ const sendPortraitEmailResend = async (toEmail, userName, imageUrl) => {
 
     if (!resend) {
       console.log(`${logPrefix} Resend API key not configured — skipping.`);
-      return { 
-        success: false, 
-        error: "Resend API key not configured", 
-        mock: true 
-      };
+      return { success: false, error: "Resend API key not configured", mock: true };
     }
 
     console.log(`${logPrefix} Preparing attachment...`);
@@ -177,23 +179,20 @@ const sendPortraitEmailResend = async (toEmail, userName, imageUrl) => {
       attachment = await prepareImageAttachment(imageUrl, userName);
     } catch (imgErr) {
       console.warn(`${logPrefix} Image preparation failed: ${imgErr.message}`);
-      return { 
-        success: false, 
-        error: `Image preparation failed: ${imgErr.message}` 
-      };
+      return { success: false, error: `Image preparation failed: ${imgErr.message}` };
     }
 
     console.log(`${logPrefix} Sending via Resend API...`);
 
     const result = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || "AI Photo Booth <onboarding@resend.dev>",
-      to: toEmail,
+      from:    process.env.RESEND_FROM_EMAIL || "AI Photo Booth <onboarding@resend.dev>",
+      to:      toEmail,
       subject: `Your AI Portrait is Ready, ${escapeHtml(userName)}! 📸`,
-      html: buildEmailTemplate(userName),
+      html:    buildEmailTemplate(userName),
       attachments: [
         {
-          filename: attachment.filename,
-          content: attachment.content,
+          filename:    attachment.filename,
+          content:     attachment.content,
           contentType: attachment.contentType,
         },
       ],
@@ -201,33 +200,21 @@ const sendPortraitEmailResend = async (toEmail, userName, imageUrl) => {
 
     if (result.error) {
       console.error(`${logPrefix} Resend API error: ${result.error.message}`);
-      return { 
-        success: false, 
-        error: `Resend API error: ${result.error.message}` 
-      };
+      return { success: false, error: `Resend API error: ${result.error.message}` };
     }
 
-    console.log(`${logPrefix} Email queued. messageId=${result.data.id}`);
-    return { 
-      success: true, 
-      queued: true, 
-      messageId: result.data.id 
-    };
+    console.log(`${logPrefix} Email queued. messageId=${result.data?.id}`);
+    return { success: true, queued: true, messageId: result.data?.id };
 
   } catch (err) {
     console.error(`${logPrefix} Unexpected error: ${err.message}`);
-    return { 
-      success: false, 
-      error: err.message 
-    };
+    return { success: false, error: err.message };
   }
 };
 
 /**
- * Send portrait email via Resend (with confirmation)
- * 
- * Use this only when you need delivery confirmation.
- * For most cases, use the non-blocking variant above.
+ * Send portrait email via Resend (blocking — waits for confirmation).
+ * Use only when delivery confirmation is needed before continuing.
  */
 const sendPortraitEmailResendAsync = async (toEmail, userName, imageUrl) => {
   const logPrefix = `[EmailService:Resend:async] ${toEmail}`;
@@ -237,13 +224,9 @@ const sendPortraitEmailResendAsync = async (toEmail, userName, imageUrl) => {
 
     if (!resend) {
       console.log(`${logPrefix} Resend API key not configured.`);
-      return { 
-        success: false, 
-        error: "Resend API key not configured" 
-      };
+      return { success: false, error: "Resend API key not configured" };
     }
 
-    // Prepare attachment with timeout
     const attachment = await Promise.race([
       prepareImageAttachment(imageUrl, userName),
       new Promise((_, reject) =>
@@ -251,17 +234,16 @@ const sendPortraitEmailResendAsync = async (toEmail, userName, imageUrl) => {
       ),
     ]);
 
-    // Send with timeout
     const result = await Promise.race([
       resend.emails.send({
-        from: process.env.RESEND_FROM_EMAIL || "AI Photo Booth <onboarding@resend.dev>",
-        to: toEmail,
+        from:    process.env.RESEND_FROM_EMAIL || "AI Photo Booth <onboarding@resend.dev>",
+        to:      toEmail,
         subject: `Your AI Portrait is Ready, ${escapeHtml(userName)}! 📸`,
-        html: buildEmailTemplate(userName),
+        html:    buildEmailTemplate(userName),
         attachments: [
           {
-            filename: attachment.filename,
-            content: attachment.content,
+            filename:    attachment.filename,
+            content:     attachment.content,
             contentType: attachment.contentType,
           },
         ],
@@ -273,63 +255,54 @@ const sendPortraitEmailResendAsync = async (toEmail, userName, imageUrl) => {
 
     if (result.error) {
       console.error(`${logPrefix} Failed: ${result.error.message}`);
-      return { 
-        success: false, 
-        error: result.error.message 
-      };
+      return { success: false, error: result.error.message };
     }
 
-    console.log(`${logPrefix} Delivered. messageId=${result.data.id}`);
-    return { 
-      success: true, 
-      messageId: result.data.id 
-    };
+    console.log(`${logPrefix} Delivered. messageId=${result.data?.id}`);
+    return { success: true, messageId: result.data?.id };
 
   } catch (err) {
     console.error(`${logPrefix} Error: ${err.message}`);
-    return { 
-      success: false, 
-      error: err.message 
-    };
+    return { success: false, error: err.message };
   }
 };
 
 /**
- * Health check for Resend service
+ * Health check for Resend service.
+ *
+ * FIXED: Old version called resend.emails.list() which does not exist in the
+ * Resend Node SDK — it threw TypeError which was swallowed by .catch(), making
+ * health always report "healthy" regardless of API key validity.
+ *
+ * New approach: validate key format locally (no API call needed for a health check).
+ * The key is validated structurally; actual send errors surface via send functions.
  */
 const checkResendHealth = async () => {
-  const resend = getResendClient();
+  const apiKey = process.env.RESEND_API_KEY;
 
-  if (!resend) {
+  if (!apiKey) {
     return {
-      healthy: true,
+      healthy:    true,
       configured: false,
-      message: "Resend API not configured (optional)",
+      message:    "Resend API not configured (optional)",
     };
   }
 
-  try {
-    // Resend doesn't have a direct health check, but we can check the API key
-    const test = await Promise.race([
-      // Try to get email list (lightweight check)
-      resend.emails.list().catch(() => ({ data: [] })),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Resend API timeout")), 5_000)
-      ),
-    ]);
-
+  // Resend API keys always start with "re_"
+  if (!apiKey.startsWith("re_")) {
     return {
-      healthy: true,
+      healthy:    false,
       configured: true,
-      message: "Resend API healthy",
-    };
-  } catch (err) {
-    return {
-      healthy: false,
-      configured: true,
-      message: `Resend API error: ${err.message}`,
+      message:    "Resend API key appears invalid (should start with 're_')",
     };
   }
+
+  // Key is present and correctly formatted
+  return {
+    healthy:    true,
+    configured: true,
+    message:    "Resend API configured",
+  };
 };
 
 module.exports = {

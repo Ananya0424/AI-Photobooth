@@ -2,26 +2,21 @@ const nodemailer = require("nodemailer");
 const axios      = require("axios");
 
 /**
- * Email Service — sends portrait images to users after generation.
+ * Email Service (Gmail SMTP) — UPDATED FOR RENDER
  *
- * UPDATES FOR RENDER DEPLOYMENT:
- *   - SMTP verify timeout increased from 5s to 15s (Render network latency)
- *   - Callback errors now logged with full context (code, response, timestamp)
- *   - Fire-and-forget is still non-blocking, but failures are now visible in logs
- *   - Added Resend API support as alternative to Gmail SMTP
- *
- * Design decisions:
- *   - Email failures NEVER throw and NEVER block the API response
- *   - Transporter is a singleton (one connection pool per process)
- *   - HTML template escapes userName to prevent XSS
- *   - Non-blocking send: caller gets a response immediately; email delivers async
- *   - Async variant (sendPortraitEmailAsync) available when delivery confirmation matters
+ * FIXES in this version:
+ *   - Pool error handler added: dead/dropped SMTP connections now reset the
+ *     singleton so the next request gets a fresh transporter (was silently
+ *     failing forever on Render after a connection drop)
+ *   - SMTP verify timeout increased from 5s to 15s for Render network latency
+ *   - Callback errors logged with full context
+ *   - Fire-and-forget remains non-blocking
  */
 
 // ─── Singleton transporter ────────────────────────────────────────────────────
 
-let _transporter       = null;
-let _transporterReady  = false;
+let _transporter      = null;
+let _transporterReady = false;
 
 /**
  * Build a nodemailer SMTP transporter with pooling.
@@ -40,16 +35,14 @@ const createTransporter = () => {
     return null;
   }
 
-  return nodemailer.createTransport({
-    // Pool options MUST be at the top level — not nested inside an object
+  const transporter = nodemailer.createTransport({
     pool:           true,
     maxConnections: 5,
     maxMessages:    100,
-    // SMTP settings
-    host:    "smtp.gmail.com",
-    port:    587,
-    secure:  false, // use STARTTLS (port 587), not SSL (port 465)
-    requireTLS: true,
+    host:           "smtp.gmail.com",
+    port:           587,
+    secure:         false, // STARTTLS
+    requireTLS:     true,
     auth: {
       user: emailUser,
       pass: emailPass,
@@ -57,13 +50,26 @@ const createTransporter = () => {
     connectionTimeout: 10_000,
     socketTimeout:     15_000,
     logger: false,
-    debug: process.env.NODE_ENV !== 'production', // Enable debug logs on localhost
+    debug:  process.env.NODE_ENV !== "production",
   });
+
+  // FIXED: listen for pool-level errors and reset the singleton so the next
+  // request creates a fresh transporter instead of reusing a dead connection.
+  transporter.on("error", (err) => {
+    console.error(
+      `[EmailService] SMTP pool error — resetting transporter: ${err.message}`
+    );
+    _transporter      = null;
+    _transporterReady = false;
+  });
+
+  return transporter;
 };
 
 /**
  * Returns the cached transporter, creating it on first call.
- * Safe to call multiple times.
+ * Safe to call multiple times. If a previous transporter died and was reset,
+ * this will create a new one transparently.
  */
 const getTransporter = () => {
   if (!_transporterReady) {
@@ -77,7 +83,6 @@ const getTransporter = () => {
 
 /**
  * Escape a string for safe insertion into HTML.
- * Prevents XSS when user-supplied values (e.g. userName) appear in email bodies.
  */
 const escapeHtml = (str) =>
   String(str)
@@ -88,12 +93,7 @@ const escapeHtml = (str) =>
     .replace(/'/g,  "&#39;");
 
 /**
- * Download an image from a URL with retry logic.
- * Throws if all attempts fail.
- *
- * @param {string} url       HTTP/HTTPS URL
- * @param {number} retries   Additional attempts after the first (default 2)
- * @returns {Promise<Buffer>}
+ * Download an image from a URL with retry + exponential backoff.
  */
 const downloadImageBuffer = async (url, retries = 2) => {
   let lastError;
@@ -102,13 +102,12 @@ const downloadImageBuffer = async (url, retries = 2) => {
     try {
       const response = await axios.get(url, {
         responseType: "arraybuffer",
-        timeout: 8_000,
+        timeout:      8_000,
       });
       return Buffer.from(response.data, "binary");
     } catch (err) {
       lastError = err;
       if (attempt < retries) {
-        // Exponential backoff: 200 ms, 400 ms
         await new Promise((resolve) =>
           setTimeout(resolve, 200 * Math.pow(2, attempt))
         );
@@ -125,9 +124,8 @@ const downloadImageBuffer = async (url, retries = 2) => {
  * Prepare the image as an email attachment.
  * Handles both base64 data URIs and external HTTP/HTTPS URLs.
  *
- * @param {string} imageUrl  Data URI or external URL
- * @param {string} userName  Used in the filename
- * @returns {Promise<{content: Buffer, contentType: string, filename: string}>}
+ * NOTE: Does NOT rely on URL extension for content-type detection (Cloudinary
+ * may serve WebP via fetch_format:auto even for .png URLs).
  */
 const prepareImageAttachment = async (imageUrl, userName) => {
   const safeName = encodeURIComponent(userName).slice(0, 40);
@@ -144,26 +142,20 @@ const prepareImageAttachment = async (imageUrl, userName) => {
     return { content, contentType, filename: `ai-portrait-${safeName}-${ts}.${ext}` };
   }
 
-  // External URL — determine type from URL path
-  let contentType = "image/jpeg";
-  let ext         = "jpg";
+  // External URL — download and detect type from response headers, not URL path
+  const response = await axios.get(imageUrl, {
+    responseType: "arraybuffer",
+    timeout:      8_000,
+  });
+  const content     = Buffer.from(response.data, "binary");
+  const contentType = response.headers["content-type"]?.split(";")[0] || "image/jpeg";
+  const ext         = contentType.split("/")[1] || "jpg";
 
-  if (imageUrl.includes(".png"))  { contentType = "image/png";  ext = "png";  }
-  if (imageUrl.includes(".webp")) { contentType = "image/webp"; ext = "webp"; }
-
-  const content = await downloadImageBuffer(imageUrl);
   return { content, contentType, filename: `ai-portrait-${safeName}-${ts}.${ext}` };
 };
 
 // ─── Email template ───────────────────────────────────────────────────────────
 
-/**
- * Build the HTML body for the portrait email.
- * userName is HTML-escaped before insertion.
- *
- * @param {string} userName
- * @returns {string} Full HTML document
- */
 const buildEmailTemplate = (userName) => {
   const safeUser = escapeHtml(userName);
 
@@ -206,15 +198,8 @@ const buildEmailTemplate = (userName) => {
 // ─── Send functions ───────────────────────────────────────────────────────────
 
 /**
- * Send a portrait email NON-BLOCKING.
- *
- * The function queues the email and returns immediately — the API response is
- * not held waiting for SMTP delivery. Failures are logged with full context.
- *
- * @param {string} toEmail   Recipient address
- * @param {string} userName  Display name (HTML-escaped internally)
- * @param {string} imageUrl  Portrait image — data URI or HTTP/HTTPS URL
- * @returns {Promise<{success:boolean, queued?:boolean, error?:string, mock?:boolean}>}
+ * Send a portrait email NON-BLOCKING (fire-and-forget).
+ * API response is not held waiting for SMTP delivery.
  */
 const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
   const logPrefix = `[EmailService] ${toEmail}`;
@@ -252,16 +237,13 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
       ],
     };
 
-    // Fire-and-forget: sendMail uses a callback, so this returns before delivery
-    // But now with enhanced error logging for Render debugging
     transporter.sendMail(mailOptions, (err, info) => {
       const timestamp = new Date().toISOString();
       if (err) {
         console.error(`${logPrefix} [${timestamp}] DELIVERY FAILED:`);
         console.error(`  Error message: ${err.message}`);
-        console.error(`  Error code: ${err.code || 'N/A'}`);
-        console.error(`  Response: ${err.response || 'N/A'}`);
-        // This is where you'd send a webhook/alert to monitoring on production
+        console.error(`  Error code: ${err.code || "N/A"}`);
+        console.error(`  Response: ${err.response || "N/A"}`);
       } else {
         console.log(`${logPrefix} [${timestamp}] DELIVERED. messageId=${info.messageId}`);
       }
@@ -276,14 +258,7 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
 
 /**
  * Send a portrait email and WAIT for SMTP confirmation.
- *
- * Use this only when the caller genuinely needs delivery confirmation before
- * continuing.  For most endpoints, prefer sendPortraitEmail (non-blocking).
- *
- * @param {string} toEmail
- * @param {string} userName
- * @param {string} imageUrl
- * @returns {Promise<{success:boolean, messageId?:string, error?:string}>}
+ * Use only when delivery confirmation is required before continuing.
  */
 const sendPortraitEmailAsync = async (toEmail, userName, imageUrl) => {
   const logPrefix = `[EmailService:async] ${toEmail}`;
@@ -296,11 +271,10 @@ const sendPortraitEmailAsync = async (toEmail, userName, imageUrl) => {
       return { success: false, error: "Email service not configured" };
     }
 
-    // Prepare attachment with a hard timeout
     const attachment = await Promise.race([
       prepareImageAttachment(imageUrl, userName),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Image preparation timeout (10 s)")), 10_000)
+        setTimeout(() => reject(new Error("Image preparation timeout (10s)")), 10_000)
       ),
     ]);
 
@@ -319,11 +293,10 @@ const sendPortraitEmailAsync = async (toEmail, userName, imageUrl) => {
       ],
     };
 
-    // Wait for SMTP response with a hard timeout
     const info = await Promise.race([
       transporter.sendMail(mailOptions),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("SMTP send timeout (15 s)")), 15_000)
+        setTimeout(() => reject(new Error("SMTP send timeout (15s)")), 15_000)
       ),
     ]);
 
@@ -337,32 +310,32 @@ const sendPortraitEmailAsync = async (toEmail, userName, imageUrl) => {
 
 /**
  * Lightweight health check for the email service.
- * Does not throw — returns a structured result.
- *
- * UPDATED: Timeout increased from 5s to 15s for Render network latency
- *
- * @returns {Promise<{healthy:boolean, configured:boolean, message:string}>}
+ * Timeout increased to 15s for Render network latency.
  */
 const checkEmailServiceHealth = async () => {
   const transporter = getTransporter();
 
   if (!transporter) {
-    return { 
-      healthy: true, 
-      configured: false, 
-      message: "Email service not configured (optional)" 
+    return {
+      healthy:    true,
+      configured: false,
+      message:    "Email service not configured (optional)",
     };
   }
 
   try {
-    // UPDATED: 5s → 15s for Render
-    const VERIFY_TIMEOUT = process.env.NODE_ENV === 'production' ? 15_000 : 5_000;
-    
+    const VERIFY_TIMEOUT = process.env.NODE_ENV === "production" ? 15_000 : 5_000;
+
     const ok = await Promise.race([
-      new Promise((resolve) => transporter.verify((err) => {
-        console.log(`[Email Health] SMTP verify result:`, !err ? 'OK' : err.message);
-        resolve(!err);
-      })),
+      new Promise((resolve) =>
+        transporter.verify((err) => {
+          console.log(
+            `[Email Health] SMTP verify result:`,
+            !err ? "OK" : err.message
+          );
+          resolve(!err);
+        })
+      ),
       new Promise((resolve) => {
         setTimeout(() => {
           console.log(`[Email Health] SMTP verify timeout after ${VERIFY_TIMEOUT}ms`);
@@ -374,15 +347,15 @@ const checkEmailServiceHealth = async () => {
     return {
       healthy:    ok,
       configured: true,
-      message:    ok 
-        ? "Email service healthy" 
-        : `SMTP verification timed out (Render limitation; emails still queued)`,
+      message:    ok
+        ? "Email service healthy"
+        : "SMTP verification timed out (Render limitation; emails still queued)",
     };
   } catch (err) {
-    return { 
-      healthy: false, 
-      configured: true, 
-      message: `Email service error: ${err.message}` 
+    return {
+      healthy:    false,
+      configured: true,
+      message:    `Email service error: ${err.message}`,
     };
   }
 };
