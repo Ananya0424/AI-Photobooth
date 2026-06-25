@@ -8,7 +8,7 @@ cloudinary.config({
 });
 
 /**
- * Upload a base64-encoded image to Cloudinary
+ * Upload a base64-encoded image to Cloudinary with dimension logging
  * @param {string} base64String - The base64 image string (can include data URI prefix)
  * @returns {Promise<string>} The secure URL of the uploaded image
  */
@@ -20,7 +20,9 @@ const uploadImage = async (base64String) => {
       imageData = `data:image/png;base64,${imageData}`;
     }
 
+    const inputSizeKB = (imageData.length / 1024).toFixed(2);
     console.log("[Cloudinary] Uploading base64 image...");
+    console.log(`[Cloudinary] Input size: ${inputSizeKB} KB`);
 
     const result = await cloudinary.uploader.upload(imageData, {
       folder: "ai-photobooth",
@@ -29,7 +31,13 @@ const uploadImage = async (base64String) => {
       fetch_format: "auto",
     });
 
-    console.log(`[Cloudinary] Upload successful: ${result.secure_url}`);
+    console.log(`[Cloudinary] Upload successful:`);
+    console.log(`  Secure URL: ${result.secure_url}`);
+    console.log(`  Dimensions: ${result.width} × ${result.height} px`);
+    console.log(`  File size: ${(result.bytes / 1024).toFixed(2)} KB`);
+    console.log(`  Format: ${result.format}`);
+    console.log(`  Version: ${result.version}`);
+    
     return result.secure_url;
   } catch (error) {
     console.error("[Cloudinary] Upload failed:", error.message);
@@ -38,13 +46,14 @@ const uploadImage = async (base64String) => {
 };
 
 /**
- * Upload an image from a URL to Cloudinary
+ * Upload an image from a URL to Cloudinary with dimension logging
  * @param {string} imageUrl - The URL of the image to upload
  * @returns {Promise<string>} The secure URL of the uploaded image
  */
 const uploadImageFromUrl = async (imageUrl) => {
   try {
-    console.log(`[Cloudinary] Uploading image from URL: ${imageUrl}`);
+    console.log(`[Cloudinary] Uploading image from URL...`);
+    console.log(`[Cloudinary] Source URL: ${imageUrl.substring(0, 100)}...`);
 
     const result = await cloudinary.uploader.upload(imageUrl, {
       folder: "ai-photobooth",
@@ -53,7 +62,12 @@ const uploadImageFromUrl = async (imageUrl) => {
       fetch_format: "auto",
     });
 
-    console.log(`[Cloudinary] URL upload successful: ${result.secure_url}`);
+    console.log(`[Cloudinary] URL upload successful:`);
+    console.log(`  Secure URL: ${result.secure_url}`);
+    console.log(`  Dimensions: ${result.width} × ${result.height} px`);
+    console.log(`  File size: ${(result.bytes / 1024).toFixed(2)} KB`);
+    console.log(`  Format: ${result.format}`);
+    
     return result.secure_url;
   } catch (error) {
     console.error("[Cloudinary] URL upload failed:", error.message);

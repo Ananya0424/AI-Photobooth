@@ -1,27 +1,37 @@
 const { Client } = require("@gradio/client");
 
 /**
- * Image Enhancement Service
+ * Image Enhancement Service — UPDATED FOR RENDER DEPLOYMENT
+ *
+ * Changes:
+ *   - Dynamic timeout: 120s for production (Render), 30s for localhost
+ *   - Enhancement result now includes status object (method, success, timeMs, error)
+ *   - All failures logged with clear error messages
+ *   - Never throws — always returns a usable URL
  *
  * Enhancement pipeline (in priority order):
  *   1. CodeFormer  — best quality, background + face upsampling built-in
  *   2. GFPGAN      — fallback if CodeFormer is unavailable
  *   3. Original    — returned unchanged if all enhancement fails (never blocks the user)
- *
- * Fixes applied vs original:
- *   - Every Client.connect() and client.predict() wrapped in a per-call timeout
- *   - urlToBlob error surfaced with a descriptive message
- *   - GFPGAN space list kept but made easier to extend via GFPGAN_SPACES constant
- *   - No silent swallowing of errors — all failures are logged clearly
  */
 
-const GRADIO_CONNECT_TIMEOUT_MS = 30_000;  // 30 s to connect to a Space
-const GRADIO_PREDICT_TIMEOUT_MS = 120_000; // 2 min for inference (cold-start)
+// Dynamic timeout based on environment
+const getGradioConnectTimeout = () => {
+  // Render cold-starts can take 45-120s; 30s is too aggressive
+  return process.env.NODE_ENV === 'production'
+    ? parseInt(process.env.GRADIO_CONNECT_TIMEOUT || '120000', 10)
+    : 30_000;
+};
+
+const GRADIO_CONNECT_TIMEOUT_MS = getGradioConnectTimeout();
+const GRADIO_PREDICT_TIMEOUT_MS = parseInt(process.env.GRADIO_PREDICT_TIMEOUT || '180000', 10);
 
 const GFPGAN_SPACES = [
   "Xintao/GFPGAN",
   "nightfury/GFPGAN",
 ];
+
+console.log(`[ImageEnhancer] Configured timeouts: connect=${GRADIO_CONNECT_TIMEOUT_MS}ms, predict=${GRADIO_PREDICT_TIMEOUT_MS}ms`);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +78,8 @@ const urlToBlob = async (url) => {
  * @returns {Promise<string>} URL of the enhanced image
  */
 const restoreFaceCodeFormer = async (imageUrl) => {
-  console.log("[ImageEnhancer] Starting CodeFormer face restoration...");
+  console.log("[ImageEnhancer:CodeFormer] Starting face restoration...");
+  console.log(`[ImageEnhancer:CodeFormer] Connect timeout: ${GRADIO_CONNECT_TIMEOUT_MS}ms, Predict timeout: ${GRADIO_PREDICT_TIMEOUT_MS}ms`);
   const startTime = Date.now();
 
   const imageBlob = await urlToBlob(imageUrl);
@@ -97,7 +108,8 @@ const restoreFaceCodeFormer = async (imageUrl) => {
   const outputUrl = result?.data?.[0]?.url || result?.data?.[0];
   if (!outputUrl) throw new Error("CodeFormer returned no output URL");
 
-  console.log(`[ImageEnhancer] CodeFormer complete in ${Date.now() - startTime}ms`);
+  const elapsed = Date.now() - startTime;
+  console.log(`[ImageEnhancer:CodeFormer] SUCCESS — completed in ${elapsed}ms`);
   return outputUrl;
 };
 
@@ -111,14 +123,14 @@ const restoreFaceCodeFormer = async (imageUrl) => {
  * @returns {Promise<string>} URL of the enhanced image
  */
 const restoreFaceGFPGAN = async (imageUrl) => {
-  console.log("[ImageEnhancer] Starting GFPGAN face restoration...");
+  console.log("[ImageEnhancer:GFPGAN] Starting face restoration...");
   const startTime  = Date.now();
   const imageBlob  = await urlToBlob(imageUrl);
   let   lastError;
 
   for (const spaceName of GFPGAN_SPACES) {
     try {
-      console.log(`[ImageEnhancer] Trying GFPGAN space: ${spaceName}`);
+      console.log(`[ImageEnhancer:GFPGAN] Attempting space: ${spaceName}`);
 
       const client = await withTimeout(
         Client.connect(spaceName, {
@@ -141,12 +153,13 @@ const restoreFaceGFPGAN = async (imageUrl) => {
       const outputUrl = result?.data?.[0]?.url || result?.data?.[0];
       if (!outputUrl) throw new Error(`${spaceName} returned no output URL`);
 
+      const elapsed = Date.now() - startTime;
       console.log(
-        `[ImageEnhancer] GFPGAN (${spaceName}) complete in ${Date.now() - startTime}ms`
+        `[ImageEnhancer:GFPGAN] SUCCESS — ${spaceName} completed in ${elapsed}ms`
       );
       return outputUrl;
     } catch (err) {
-      console.warn(`[ImageEnhancer] GFPGAN space ${spaceName} failed: ${err.message}`);
+      console.warn(`[ImageEnhancer:GFPGAN] Space ${spaceName} failed: ${err.message}`);
       lastError = err;
     }
   }
@@ -161,10 +174,11 @@ const restoreFaceGFPGAN = async (imageUrl) => {
  *
  * Tries CodeFormer first (highest quality), then GFPGAN, then returns the
  * original URL unchanged.  This function NEVER throws — callers can always
- * expect a usable image URL back.
+ * expect a usable result back.
  *
  * @param {string} imageUrl  HTTP/HTTPS URL of the image to enhance
- * @returns {Promise<string>} URL of the (possibly enhanced) image
+ * @returns {Promise<{url: string, method: string, success: boolean, timeMs: number, error?: string}>}
+ *          Status object with URL, enhancement method used, and timing info
  */
 const enhanceImage = async (imageUrl) => {
   const startTime = Date.now();
@@ -173,24 +187,43 @@ const enhanceImage = async (imageUrl) => {
   // Attempt 1: CodeFormer
   try {
     const url = await restoreFaceCodeFormer(imageUrl);
-    console.log(`[ImageEnhancer] Pipeline complete via CodeFormer (${Date.now() - startTime}ms)`);
-    return url;
+    const elapsed = Date.now() - startTime;
+    console.log(`[ImageEnhancer] Pipeline complete via CodeFormer (${elapsed}ms)`);
+    return {
+      url,
+      method: 'codeformer',
+      success: true,
+      timeMs: elapsed,
+    };
   } catch (err) {
-    console.warn(`[ImageEnhancer] CodeFormer failed — trying GFPGAN: ${err.message}`);
+    console.warn(`[ImageEnhancer] CodeFormer failed: ${err.message}`);
   }
 
   // Attempt 2: GFPGAN
   try {
     const url = await restoreFaceGFPGAN(imageUrl);
-    console.log(`[ImageEnhancer] Pipeline complete via GFPGAN (${Date.now() - startTime}ms)`);
-    return url;
+    const elapsed = Date.now() - startTime;
+    console.log(`[ImageEnhancer] Pipeline complete via GFPGAN (${elapsed}ms)`);
+    return {
+      url,
+      method: 'gfpgan',
+      success: true,
+      timeMs: elapsed,
+    };
   } catch (err) {
-    console.warn(`[ImageEnhancer] GFPGAN also failed — returning original: ${err.message}`);
+    console.warn(`[ImageEnhancer] GFPGAN also failed: ${err.message}`);
   }
 
   // Fallback: return original image unchanged
-  console.log("[ImageEnhancer] All enhancement methods failed. Using original image.");
-  return imageUrl;
+  const elapsed = Date.now() - startTime;
+  console.log(`[ImageEnhancer] FALLBACK — All enhancement methods failed. Returning original image.`);
+  return {
+    url: imageUrl,
+    method: 'original',
+    success: false,
+    timeMs: elapsed,
+    error: 'Both CodeFormer and GFPGAN failed; returning unenhanced image',
+  };
 };
 
 module.exports = {

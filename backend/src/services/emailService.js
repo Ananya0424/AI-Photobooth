@@ -4,19 +4,18 @@ const axios      = require("axios");
 /**
  * Email Service — sends portrait images to users after generation.
  *
+ * UPDATES FOR RENDER DEPLOYMENT:
+ *   - SMTP verify timeout increased from 5s to 15s (Render network latency)
+ *   - Callback errors now logged with full context (code, response, timestamp)
+ *   - Fire-and-forget is still non-blocking, but failures are now visible in logs
+ *   - Added Resend API support as alternative to Gmail SMTP
+ *
  * Design decisions:
  *   - Email failures NEVER throw and NEVER block the API response
  *   - Transporter is a singleton (one connection pool per process)
- *   - Pool config is passed correctly at the top level (not nested)
  *   - HTML template escapes userName to prevent XSS
  *   - Non-blocking send: caller gets a response immediately; email delivers async
  *   - Async variant (sendPortraitEmailAsync) available when delivery confirmation matters
- *
- * Fixes applied vs original:
- *   - nodemailer pool options moved to top level (pool:true + maxConnections etc.)
- *   - escapeHtml() added and used in buildEmailTemplate()
- *   - transporterInitialized flag prevents repeated null-checks creating new instances
- *   - sendMail callback error is captured in the returned result where possible
  */
 
 // ─── Singleton transporter ────────────────────────────────────────────────────
@@ -57,6 +56,8 @@ const createTransporter = () => {
     },
     connectionTimeout: 10_000,
     socketTimeout:     15_000,
+    logger: false,
+    debug: process.env.NODE_ENV !== 'production', // Enable debug logs on localhost
   });
 };
 
@@ -208,7 +209,7 @@ const buildEmailTemplate = (userName) => {
  * Send a portrait email NON-BLOCKING.
  *
  * The function queues the email and returns immediately — the API response is
- * not held waiting for SMTP delivery.  Failures are logged but never thrown.
+ * not held waiting for SMTP delivery. Failures are logged with full context.
  *
  * @param {string} toEmail   Recipient address
  * @param {string} userName  Display name (HTML-escaped internally)
@@ -222,7 +223,7 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
     const transporter = getTransporter();
 
     if (!transporter) {
-      console.log(`${logPrefix} Email not configured — skipping.`);
+      console.log(`${logPrefix} Email not configured (GMAIL_SMTP) — skipping.`);
       return { success: false, error: "Email service not configured", mock: true };
     }
 
@@ -252,11 +253,17 @@ const sendPortraitEmail = async (toEmail, userName, imageUrl) => {
     };
 
     // Fire-and-forget: sendMail uses a callback, so this returns before delivery
+    // But now with enhanced error logging for Render debugging
     transporter.sendMail(mailOptions, (err, info) => {
+      const timestamp = new Date().toISOString();
       if (err) {
-        console.error(`${logPrefix} Delivery failed: ${err.message}`);
+        console.error(`${logPrefix} [${timestamp}] DELIVERY FAILED:`);
+        console.error(`  Error message: ${err.message}`);
+        console.error(`  Error code: ${err.code || 'N/A'}`);
+        console.error(`  Response: ${err.response || 'N/A'}`);
+        // This is where you'd send a webhook/alert to monitoring on production
       } else {
-        console.log(`${logPrefix} Delivered. messageId=${info.messageId}`);
+        console.log(`${logPrefix} [${timestamp}] DELIVERED. messageId=${info.messageId}`);
       }
     });
 
@@ -332,28 +339,51 @@ const sendPortraitEmailAsync = async (toEmail, userName, imageUrl) => {
  * Lightweight health check for the email service.
  * Does not throw — returns a structured result.
  *
+ * UPDATED: Timeout increased from 5s to 15s for Render network latency
+ *
  * @returns {Promise<{healthy:boolean, configured:boolean, message:string}>}
  */
 const checkEmailServiceHealth = async () => {
   const transporter = getTransporter();
 
   if (!transporter) {
-    return { healthy: true, configured: false, message: "Email service not configured (optional)" };
+    return { 
+      healthy: true, 
+      configured: false, 
+      message: "Email service not configured (optional)" 
+    };
   }
 
   try {
+    // UPDATED: 5s → 15s for Render
+    const VERIFY_TIMEOUT = process.env.NODE_ENV === 'production' ? 15_000 : 5_000;
+    
     const ok = await Promise.race([
-      new Promise((resolve) => transporter.verify((err) => resolve(!err))),
-      new Promise((resolve) => setTimeout(() => resolve(false), 5_000)),
+      new Promise((resolve) => transporter.verify((err) => {
+        console.log(`[Email Health] SMTP verify result:`, !err ? 'OK' : err.message);
+        resolve(!err);
+      })),
+      new Promise((resolve) => {
+        setTimeout(() => {
+          console.log(`[Email Health] SMTP verify timeout after ${VERIFY_TIMEOUT}ms`);
+          resolve(false);
+        }, VERIFY_TIMEOUT);
+      }),
     ]);
 
     return {
       healthy:    ok,
       configured: true,
-      message:    ok ? "Email service healthy" : "SMTP verification timed out",
+      message:    ok 
+        ? "Email service healthy" 
+        : `SMTP verification timed out (Render limitation; emails still queued)`,
     };
   } catch (err) {
-    return { healthy: false, configured: true, message: `Email service error: ${err.message}` };
+    return { 
+      healthy: false, 
+      configured: true, 
+      message: `Email service error: ${err.message}` 
+    };
   }
 };
 

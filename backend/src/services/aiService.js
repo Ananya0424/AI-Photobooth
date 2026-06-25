@@ -3,20 +3,14 @@ const { Client } = require("@gradio/client");
 const { enhanceImage } = require("./imageEnhancer");
 
 /**
- * AI Service — image generation + face swap pipeline
+ * AI Service — image generation + face swap pipeline (UPDATED FOR RENDER)
  *
  * Pipeline:
  *   1. Generate base image via OpenAI (or skip in mock mode)
  *   2. Swap user face onto generated image via Gradio (tonyassi/face-swap)
  *   3. Enhance result via CodeFormer / GFPGAN (imageEnhancer)
  *
- * Fixes applied vs original:
- *   - Singleton OpenAI client (one instance per process)
- *   - Unified isMockMode() — single source of truth
- *   - Gradio calls wrapped in per-call timeouts (no infinite hangs)
- *   - Retry counter renamed maxAttempts to avoid off-by-one confusion
- *   - Prompt sanitisation driven by a config array (no long if/replace chains)
- *   - getBlobFromImage consolidated and exported for reuse
+ * NEW: Enhanced logging, environment validation, dimension tracking
  */
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -112,16 +106,16 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
  *   - /assets/…         (local frontend/public files)
  *   - any http/https URL
  */
-const getBlobFromImage = async (imageInput) => {
+const getBlobFromImage = async (imageInput, label = "[getBlobFromImage]") => {
   if (!imageInput) throw new Error("getBlobFromImage: imageInput is required");
+
+  let blob;
 
   if (imageInput.startsWith("data:")) {
     const res = await fetch(imageInput);
     if (!res.ok) throw new Error("getBlobFromImage: failed to parse data URI");
-    return res.blob();
-  }
-
-  if (imageInput.startsWith("/assets/")) {
+    blob = await res.blob();
+  } else if (imageInput.startsWith("/assets/")) {
     const path = require("path");
     const fs   = require("fs");
     const filePath = path.join(__dirname, "../../../frontend/public", imageInput);
@@ -130,16 +124,21 @@ const getBlobFromImage = async (imageInput) => {
     }
     const buffer = fs.readFileSync(filePath);
     const mime   = imageInput.endsWith(".png") ? "image/png" : "image/jpeg";
-    return new Blob([buffer], { type: mime });
+    blob = new Blob([buffer], { type: mime });
+  } else {
+    const res = await fetch(imageInput);
+    if (!res.ok) {
+      throw new Error(
+        `getBlobFromImage: HTTP ${res.status} fetching ${imageInput}`
+      );
+    }
+    blob = await res.blob();
   }
 
-  const res = await fetch(imageInput);
-  if (!res.ok) {
-    throw new Error(
-      `getBlobFromImage: HTTP ${res.status} fetching ${imageInput}`
-    );
-  }
-  return res.blob();
+  const sizeKB = (blob.size / 1024).toFixed(2);
+  console.log(`${label} Blob prepared: ${sizeKB} KB, type: ${blob.type}`);
+  
+  return blob;
 };
 
 /**
@@ -159,12 +158,12 @@ const withTimeout = (promise, ms, label) =>
  * Swap the face from `sourceImageUrl` onto `destImageUrl` using Gradio.
  * Returns the swapped image URL, or throws on failure.
  */
-const runFaceSwap = async (sourceImageUrl, destImageUrl) => {
-  console.log("[AI Service] Connecting to Gradio face-swap space...");
+const runFaceSwap = async (sourceImageUrl, destImageUrl, label = "[runFaceSwap]") => {
+  console.log(`${label} Connecting to Gradio face-swap space...`);
 
   const [srcBlob, destBlob] = await Promise.all([
-    getBlobFromImage(sourceImageUrl),
-    getBlobFromImage(destImageUrl),
+    getBlobFromImage(sourceImageUrl, `${label}:src`),
+    getBlobFromImage(destImageUrl, `${label}:dest`),
   ]);
 
   const client = await withTimeout(
@@ -182,7 +181,7 @@ const runFaceSwap = async (sourceImageUrl, destImageUrl) => {
   const url = result?.data?.[0]?.url;
   if (!url) throw new Error("Face-swap API returned no image URL");
 
-  console.log("[AI Service] Face swap successful.");
+  console.log(`${label} Face swap successful. Result URL: ${url.substring(0, 80)}...`);
   return url;
 };
 
@@ -209,6 +208,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const fullPrompt = `${PREFIX} ${currentPrompt}. ${SUFFIX}`;
     console.log(`${label} Generating image — attempt ${attempt}/${maxAttempts} (model: ${modelName})`);
+    console.log(`${label} Prompt: "${fullPrompt.substring(0, 120)}..."`);
 
     const params = {
       model:  modelName,
@@ -236,6 +236,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
       if (!imageUrl) throw new Error("OpenAI response contained no image data");
 
       console.log(`${label} Image generated successfully on attempt ${attempt}.`);
+      console.log(`${label} Image URL: ${imageUrl.substring(0, 100)}...`);
       return imageUrl;
     } catch (err) {
       const isSafetyError =
@@ -272,7 +273,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
  * @param {string} prompt           Style prompt for OpenAI
  * @param {string} selectedModel    OpenAI model ID (default: gpt-image-2)
  * @param {string} [sessionId]      For scoped log labels
- * @returns {Promise<string>}       Final image URL (Cloudinary or Gradio CDN)
+ * @returns {Promise<{imageUrl: string, enhancement: object}>}  Final image URL + metadata
  */
 const generateFaceSwap = async (
   sourceImageUrl,
@@ -282,45 +283,101 @@ const generateFaceSwap = async (
   sessionId = "unknown"
 ) => {
   const label = `[AI Service][${sessionId}]`;
-  console.log(`${label} Starting face-swap pipeline (mock=${isMockMode()})...`);
+  const pipelineStart = Date.now();
+  
+  console.log(`\n${"=".repeat(80)}`);
+  console.log(`${label} Starting face-swap pipeline`);
+  console.log(`  NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`  Mock mode: ${isMockMode()}`);
+  console.log(`  OpenAI key configured: ${!!process.env.OPENAI_API_KEY}`);
+  console.log(`  HF token configured: ${!!process.env.HF_TOKEN}`);
+  console.log(`${"=".repeat(80)}\n`);
 
   // ── Mock mode: skip OpenAI, swap face onto the raw template ──────────────
   if (isMockMode()) {
-    console.log(`${label} MOCK MODE — swapping face onto template directly.`);
+    console.log(`${label} MOCK MODE — swapping face onto template directly (no OpenAI generation).`);
     try {
-      const swappedUrl = await runFaceSwap(sourceImageUrl, targetTemplateUrl);
+      const swappedUrl = await runFaceSwap(sourceImageUrl, targetTemplateUrl, label);
+      
       try {
-        return await enhanceImage(swappedUrl);
+        const enhancementResult = await enhanceImage(swappedUrl);
+        console.log(`${label} Enhancement result:`, enhancementResult);
+        console.log(`${label} Total pipeline time: ${Date.now() - pipelineStart}ms\n`);
+        
+        return {
+          imageUrl: enhancementResult.url,
+          enhancement: enhancementResult,
+        };
       } catch (enhErr) {
-        console.warn(`${label} Mock enhancement failed — returning raw swap: ${enhErr.message}`);
-        return swappedUrl;
+        console.warn(`${label} Enhancement error (non-fatal): ${enhErr.message}`);
+        console.log(`${label} Total pipeline time: ${Date.now() - pipelineStart}ms\n`);
+        
+        return {
+          imageUrl: swappedUrl,
+          enhancement: { method: 'none', success: false, error: enhErr.message },
+        };
       }
     } catch (err) {
-      console.error(`${label} Mock face-swap failed — returning source image: ${err.message}`);
-      return sourceImageUrl;
+      console.error(`${label} Mock face-swap failed: ${err.message}`);
+      console.log(`${label} Total pipeline time: ${Date.now() - pipelineStart}ms\n`);
+      
+      return {
+        imageUrl: sourceImageUrl,
+        enhancement: { method: 'none', success: false, error: err.message },
+      };
     }
   }
 
   // ── Step 1: Generate base image ───────────────────────────────────────────
-  const generatedImageUrl = await generateBaseImage(prompt, selectedModel, sessionId);
+  console.log(`${label} STEP 1: Generating base image via OpenAI...`);
+  const generationStart = Date.now();
+  let generatedImageUrl;
+  
+  try {
+    generatedImageUrl = await generateBaseImage(prompt, selectedModel, sessionId);
+    console.log(`${label} Step 1 complete in ${Date.now() - generationStart}ms\n`);
+  } catch (err) {
+    console.error(`${label} Step 1 failed: ${err.message}`);
+    throw err;
+  }
 
   // ── Step 2: Face swap ─────────────────────────────────────────────────────
+  console.log(`${label} STEP 2: Swapping face onto generated image...`);
+  const swapStart = Date.now();
   let faceSwapUrl;
+  
   try {
-    faceSwapUrl = await runFaceSwap(sourceImageUrl, generatedImageUrl);
+    faceSwapUrl = await runFaceSwap(sourceImageUrl, generatedImageUrl, label);
+    console.log(`${label} Step 2 complete in ${Date.now() - swapStart}ms\n`);
   } catch (err) {
-    console.error(`${label} Face swap failed: ${err.message}`);
+    console.error(`${label} Step 2 failed: ${err.message}`);
     throw err;
   }
 
   // ── Step 3: Enhance (non-fatal — never block the user) ───────────────────
+  console.log(`${label} STEP 3: Enhancing image (CodeFormer/GFPGAN)...`);
+  const enhanceStart = Date.now();
+  
   try {
-    const enhanced = await enhanceImage(faceSwapUrl);
-    console.log(`${label} Pipeline complete (with enhancement).`);
-    return enhanced;
+    const enhancementResult = await enhanceImage(faceSwapUrl);
+    console.log(`${label} Step 3 complete in ${Date.now() - enhanceStart}ms`);
+    console.log(`${label} Enhancement: method=${enhancementResult.method}, success=${enhancementResult.success}`);
+    console.log(`${label} FULL PIPELINE COMPLETE in ${Date.now() - pipelineStart}ms\n`);
+    console.log(`${"=".repeat(80)}\n`);
+    
+    return {
+      imageUrl: enhancementResult.url,
+      enhancement: enhancementResult,
+    };
   } catch (enhErr) {
-    console.warn(`${label} Enhancement failed — returning face-swapped image: ${enhErr.message}`);
-    return faceSwapUrl;
+    console.warn(`${label} Step 3 error (non-fatal): ${enhErr.message}`);
+    console.log(`${label} FULL PIPELINE COMPLETE (no enhancement) in ${Date.now() - pipelineStart}ms\n`);
+    console.log(`${"=".repeat(80)}\n`);
+    
+    return {
+      imageUrl: faceSwapUrl,
+      enhancement: { method: 'none', success: false, error: enhErr.message, timeMs: Date.now() - enhanceStart },
+    };
   }
 };
 
