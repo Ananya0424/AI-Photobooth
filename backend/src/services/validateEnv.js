@@ -12,18 +12,16 @@
 
 const validateEnvironment = () => {
   const requiredVars = [
-    { key: "OPENAI_API_KEY",         service: "OpenAI (image generation)",  pattern: /^sk-/ },
-    { key: "HF_TOKEN",               service: "HuggingFace (enhancement)",  pattern: /^hf_/ },
-    { key: "CLOUDINARY_CLOUD_NAME",  service: "Cloudinary (CDN)",           pattern: /^[a-z0-9-]+$/i },
-    { key: "CLOUDINARY_API_KEY",     service: "Cloudinary (CDN)",           pattern: /^[0-9]+$/ },
-    // FIXED: was /^[a-z0-9]+$/i — Cloudinary secrets contain hyphens/underscores
-    { key: "CLOUDINARY_API_SECRET",  service: "Cloudinary (CDN)",           pattern: /^[a-z0-9_-]+$/i },
+    { key: "OPENAI_API_KEY",         service: "OpenAI (image generation)", pattern: /^sk-/ },
+    { key: "HF_TOKEN",               service: "HuggingFace (enhancement)", pattern: /^hf_/ },
+    { key: "CLOUDINARY_CLOUD_NAME",  service: "Cloudinary (CDN)",          pattern: /^[a-z0-9-]+$/i },
+    { key: "CLOUDINARY_API_KEY",     service: "Cloudinary (CDN)",          pattern: /^[0-9]+$/ },
+    { key: "CLOUDINARY_API_SECRET",  service: "Cloudinary (CDN)",          pattern: /^[a-z0-9_-]+$/i },
+    { key: "RESEND_API_KEY",         service: "Resend API (email)",        pattern: /^re_/ },
   ];
 
   const optionalVars = [
-    { key: "EMAIL_USER",     service: "Gmail SMTP (email)",            pattern: /.+@gmail\.com/ },
-    { key: "EMAIL_PASS",     service: "Gmail SMTP (email password)",   pattern: /.+/ },
-    { key: "RESEND_API_KEY", service: "Resend API (email alternative)", pattern: /^re_/ },
+    { key: "RESEND_FROM_EMAIL", service: "Resend sender address (optional)", pattern: /.+/ },
   ];
 
   console.log("\n" + "━".repeat(80));
@@ -54,7 +52,6 @@ const validateEnvironment = () => {
   }
 
   console.log("\n📋 OPTIONAL VARIABLES:");
-  let emailConfigured = false;
 
   for (const { key, service, pattern } of optionalVars) {
     const value   = process.env[key];
@@ -66,9 +63,6 @@ const validateEnvironment = () => {
       console.log(`      Service: ${service}`);
       const masked = value.substring(0, 6) + "..." + value.substring(value.length - 4);
       console.log(`      Value: ${masked}`);
-      if (key.includes("EMAIL") || key.includes("RESEND")) {
-        emailConfigured = true;
-      }
     } else if (isSet) {
       console.log(`  ✗ ${key} (invalid format)`);
       console.log(`      Service: ${service}`);
@@ -81,7 +75,7 @@ const validateEnvironment = () => {
   console.log("\n📋 RUNTIME ENVIRONMENT:");
   console.log(`  NODE_ENV: ${process.env.NODE_ENV || "development"}`);
   console.log(`  Platform: ${process.env.RENDER ? "Render" : "Local"}`);
-  console.log(`  Email enabled: ${emailConfigured ? "Yes" : "No (optional)"}`);
+  console.log(`  Email: Resend (${process.env.RESEND_API_KEY ? "configured" : "RESEND_API_KEY missing"})`);
   console.log("\n");
 
   if (!allRequiredValid) {
@@ -95,13 +89,7 @@ const validateEnvironment = () => {
 
   console.log("✓ All required environment variables are valid.");
 
-  if (!emailConfigured) {
-    console.log(
-      "⚠️  Email service not configured (optional — portraits will still generate).\n"
-    );
-  } else {
-    console.log("✓ Email service configured.\n");
-  }
+  console.log("✓ Email service: Resend.\n");
 
   console.log("━".repeat(80) + "\n");
 };

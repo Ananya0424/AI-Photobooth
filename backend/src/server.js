@@ -77,20 +77,13 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
 
-    // Verify SMTP connection
-    const { getTransporter } = require("./services/emailService");
-    const transporter = getTransporter();
-    if (transporter) {
-      console.log("[Email Service] Verifying SMTP connection...");
-      transporter.verify((error) => {
-        if (error) {
-          console.error("[Email Service] SMTP verification failed:", error.message);
-        } else {
-          console.log("[Email Service] SMTP connection verified successfully! ready to send emails.");
-        }
-      });
+    // Verify Resend email service
+    const { checkResendHealth } = require("./services/resendemailservice");
+    const emailHealth = await checkResendHealth();
+    if (emailHealth.configured) {
+      console.log(`[Email Service] Resend configured — ${emailHealth.message}`);
     } else {
-      console.warn("[Email Service] SMTP transporter not configured (no credentials).");
+      console.warn("[Email Service] Resend API key not set (RESEND_API_KEY missing).");
     }
 
     app.listen(PORT, () => {
