@@ -1,4 +1,29 @@
 const { Client } = require("@gradio/client");
+const sharp = require("sharp");
+
+// FIXED: Render has HUGGING_FACE_API_TOKEN set, but every call site in this
+// file only ever read HF_TOKEN — so the token was always undefined in
+// production. Read both, preferring HF_TOKEN if both happen to be set, so
+// existing local .env files using HF_TOKEN keep working too.
+const HF_TOKEN = process.env.HF_TOKEN || process.env.HUGGING_FACE_API_TOKEN || undefined;
+if (!HF_TOKEN) {
+  console.warn("[ImageEnhancer] No HF token found in HF_TOKEN or HUGGING_FACE_API_TOKEN — requests will be unauthenticated and may be rate-limited.");
+}
+
+/**
+ * Best-effort probe of an image URL's dimensions for logging only.
+ * Never throws.
+ */
+const probeUrlDimensions = async (url) => {
+  try {
+    const res = await fetch(url);
+    const buf = Buffer.from(await res.arrayBuffer());
+    const metadata = await sharp(buf).metadata();
+    return { width: metadata.width || null, height: metadata.height || null };
+  } catch {
+    return { width: null, height: null };
+  }
+};
 
 /**
  * Image Enhancement Service — UPDATED FOR RENDER DEPLOYMENT
@@ -82,11 +107,14 @@ const restoreFaceCodeFormer = async (imageUrl) => {
   console.log(`[ImageEnhancer:CodeFormer] Connect timeout: ${GRADIO_CONNECT_TIMEOUT_MS}ms, Predict timeout: ${GRADIO_PREDICT_TIMEOUT_MS}ms`);
   const startTime = Date.now();
 
+  const inputDims = await probeUrlDimensions(imageUrl);
+  console.log("Face Swap Input Resolution:", inputDims.width, inputDims.height);
+
   const imageBlob = await urlToBlob(imageUrl);
 
   const client = await withTimeout(
     Client.connect("sczhou/CodeFormer", {
-      hf_token: process.env.HF_TOKEN || undefined,
+      hf_token: HF_TOKEN,
     }),
     GRADIO_CONNECT_TIMEOUT_MS,
     "CodeFormer connect"
@@ -108,6 +136,9 @@ const restoreFaceCodeFormer = async (imageUrl) => {
   const outputUrl = result?.data?.[0]?.url || result?.data?.[0];
   if (!outputUrl) throw new Error("CodeFormer returned no output URL");
 
+  const outputDims = await probeUrlDimensions(outputUrl);
+  console.log("Face Swap Output Resolution:", outputDims.width, outputDims.height);
+
   const elapsed = Date.now() - startTime;
   console.log(`[ImageEnhancer:CodeFormer] SUCCESS — completed in ${elapsed}ms`);
   return outputUrl;
@@ -125,6 +156,10 @@ const restoreFaceCodeFormer = async (imageUrl) => {
 const restoreFaceGFPGAN = async (imageUrl) => {
   console.log("[ImageEnhancer:GFPGAN] Starting face restoration...");
   const startTime  = Date.now();
+
+  const inputDims = await probeUrlDimensions(imageUrl);
+  console.log("Face Swap Input Resolution:", inputDims.width, inputDims.height);
+
   const imageBlob  = await urlToBlob(imageUrl);
   let   lastError;
 
@@ -134,7 +169,7 @@ const restoreFaceGFPGAN = async (imageUrl) => {
 
       const client = await withTimeout(
         Client.connect(spaceName, {
-          hf_token: process.env.HF_TOKEN || undefined,
+          hf_token: HF_TOKEN,
         }),
         GRADIO_CONNECT_TIMEOUT_MS,
         `GFPGAN connect (${spaceName})`
@@ -152,6 +187,9 @@ const restoreFaceGFPGAN = async (imageUrl) => {
 
       const outputUrl = result?.data?.[0]?.url || result?.data?.[0];
       if (!outputUrl) throw new Error(`${spaceName} returned no output URL`);
+
+      const outputDims = await probeUrlDimensions(outputUrl);
+      console.log("Face Swap Output Resolution:", outputDims.width, outputDims.height);
 
       const elapsed = Date.now() - startTime;
       console.log(

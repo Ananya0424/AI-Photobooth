@@ -1,7 +1,35 @@
 const { OpenAI } = require("openai");
 const { Client } = require("@gradio/client");
+const sharp = require("sharp");
 const { enhanceImage } = require("./imageEnhancer");
 const { uploadImageFromUrl, uploadImage } = require("./cloudinaryService");
+
+/**
+ * Probe width/height of an image buffer or remote URL without fully
+ * decoding/transcoding it. Never throws — returns nulls on failure so
+ * logging never breaks the pipeline.
+ */
+const probeDimensions = async (source) => {
+  try {
+    let buffer;
+    if (Buffer.isBuffer(source)) {
+      buffer = source;
+    } else if (typeof source === "string" && source.startsWith("data:")) {
+      const base64 = source.split(",")[1];
+      buffer = Buffer.from(base64, "base64");
+    } else if (typeof source === "string") {
+      const res = await fetch(source);
+      buffer = Buffer.from(await res.arrayBuffer());
+    } else {
+      return { width: null, height: null };
+    }
+    const metadata = await sharp(buffer).metadata();
+    return { width: metadata.width || null, height: metadata.height || null };
+  } catch (err) {
+    console.warn(`[AIService] probeDimensions failed: ${err.message}`);
+    return { width: null, height: null };
+  }
+};
 
 /**
  * AI Service — image generation + face swap pipeline (UPDATED FOR RENDER)
@@ -245,15 +273,21 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
     console.log(`${label} Generating image — attempt ${attempt}/${maxAttempts} (model: ${modelName})`);
     console.log(`${label} Prompt: "${fullPrompt.substring(0, 120)}..."`);
 
-    // gpt-image-2: only model + prompt + n are valid. No size, quality, style, response_format.
-    // dall-e-3/dall-e-2: size is required; dall-e-3 also accepts quality + style.
+    // FIXED: previous comment claiming gpt-image models reject size/quality
+    // was WRONG. GPT-Image models (gpt-image-1, gpt-image-2, etc.) DO support
+    // size and quality — they only reject response_format/style (DALL·E-only
+    // params) and always return b64_json. Omitting `quality` was silently
+    // defaulting to "auto" (~medium), which is the main cause of blurry output.
     const params = {
       model:  modelName,
       prompt: fullPrompt,
       n:      1,
     };
 
-    if (modelName === "dall-e-3") {
+    if (modelName.startsWith("gpt-image")) {
+      params.size    = "1024x1024"; // generate at a real resolution; we downscale to 512x512 later in Cloudinary for crisper results than generating natively small
+      params.quality = "high";      // low | medium | high — "high" fixes the blur
+    } else if (modelName === "dall-e-3") {
       params.size    = "1024x1024";
       params.quality = "hd";
       params.style   = "natural";
@@ -277,6 +311,9 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
         : item.url || null;
 
       if (!imageUrl) throw new Error("OpenAI response contained no image data");
+
+      const { width, height } = await probeDimensions(imageUrl);
+      console.log("OpenAI Output Resolution:", width, height);
 
       console.log(`${label} Image generated successfully on attempt ${attempt}.`);
       return imageUrl;
@@ -350,10 +387,25 @@ const generateFaceSwap = async (
 
       const enhancementResult = await enhanceImage(stableSwappedUrl);
       console.log(`${label} Enhancement result: method=${enhancementResult.method}, success=${enhancementResult.success}`);
+
+      let finalMockUrl = enhancementResult.url;
+      try {
+        finalMockUrl = await uploadImageFromUrl(enhancementResult.url, {
+          width: 512,
+          height: 512,
+          crop: "fill",
+          gravity: "face",
+        });
+      } catch (resizeErr) {
+        console.warn(`${label} 512x512 enforcement failed in mock mode: ${resizeErr.message}`);
+      }
+      const mockDims = await probeDimensions(finalMockUrl);
+      console.log("Cloudinary Uploaded Resolution:", mockDims.width, mockDims.height);
+
       console.log(`${label} Total pipeline time: ${Date.now() - pipelineStart}ms\n`);
 
       return {
-        imageUrl:    enhancementResult.url,
+        imageUrl:    finalMockUrl,
         enhancement: enhancementResult,
       };
 
@@ -405,9 +457,17 @@ const generateFaceSwap = async (
   const swapStart = Date.now();
   let faceSwapUrl;
 
+  {
+    const inputDims = await probeDimensions(stableGeneratedUrl);
+    console.log("Face Swap Input Resolution:", inputDims.width, inputDims.height);
+  }
+
   try {
     faceSwapUrl = await runFaceSwap(sourceImageUrl, stableGeneratedUrl, label);
     console.log(`${label} Step 2 complete in ${Date.now() - swapStart}ms`);
+
+    const outputDims = await probeDimensions(faceSwapUrl);
+    console.log("Face Swap Output Resolution:", outputDims.width, outputDims.height);
   } catch (err) {
     console.error(`${label} Step 2 failed: ${err.message}`);
     throw err;
@@ -435,11 +495,33 @@ const generateFaceSwap = async (
   const enhancementResult = await enhanceImage(stableFaceSwapUrl);
   console.log(`${label} Step 3 complete in ${Date.now() - enhanceStart}ms`);
   console.log(`${label} Enhancement: method=${enhancementResult.method}, success=${enhancementResult.success}`);
+
+  // ── Step 4: Force final output to EXACTLY 512x512 ─────────────────────────
+  // Re-upload through Cloudinary with an exact-size transformation. This is
+  // the ONLY place a forced resize happens — doing it once, at the very end,
+  // on the highest-quality version we have, avoids compounding quality loss
+  // from resizing multiple times mid-pipeline.
+  console.log(`${label} STEP 4: Enforcing final 512x512 output via Cloudinary...`);
+  let finalUrl = enhancementResult.url;
+  try {
+    finalUrl = await uploadImageFromUrl(enhancementResult.url, {
+      width: 512,
+      height: 512,
+      crop: "fill",
+      gravity: "face",
+    });
+  } catch (resizeErr) {
+    console.warn(`${label} Step 4 (512x512 enforcement) failed — using unresized URL: ${resizeErr.message}`);
+  }
+
+  const finalDims = await probeDimensions(finalUrl);
+  console.log("Cloudinary Uploaded Resolution:", finalDims.width, finalDims.height);
+
   console.log(`${label} FULL PIPELINE COMPLETE in ${Date.now() - pipelineStart}ms\n`);
   console.log(`${"=".repeat(80)}\n`);
 
   return {
-    imageUrl:    enhancementResult.url,
+    imageUrl:    finalUrl,
     enhancement: enhancementResult,
   };
 };
