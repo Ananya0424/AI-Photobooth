@@ -130,7 +130,7 @@ const prepareImageAttachment = async (imageUrl, userName) => {
     if (!match) throw new Error("Invalid base64 data URI format");
 
     const contentType = match[1];
-    const content     = Buffer.from(match[2], "base64");
+    const content = match[2];
     const ext         = contentType.split("/")[1] || "jpg";
 
     return {
@@ -145,7 +145,7 @@ const prepareImageAttachment = async (imageUrl, userName) => {
     responseType: "arraybuffer",
     timeout:      8_000,
   });
-  const content     = Buffer.from(response.data, "binary");
+  const content = Buffer.from(response.data).toString("base64");
   const contentType = response.headers["content-type"]?.split(";")[0] || "image/jpeg";
   const ext         = contentType.split("/")[1] || "jpg";
 

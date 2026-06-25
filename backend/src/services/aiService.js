@@ -38,7 +38,7 @@ const OPENAI_TIMEOUT_MS = 300_000; // 5 min for image generation
 
 // Map fake/futuristic model IDs to real OpenAI image model IDs
 const VALID_IMAGE_MODELS = {
-  "gpt-image-2":             "gpt-image-2",
+  "gpt-image-2": "gpt-image-1",
   "gpt-image-2-2026-04-21":  "gpt-image-2",  // fake ID → real
   "gpt-image-1.5":           "gpt-image-2",  // fake ID → real
   "dall-e-3":                "dall-e-3",
@@ -232,7 +232,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
   }
 
   // FIXED: map fake/unknown model IDs to real ones before sending to API
-  const modelName   = VALID_IMAGE_MODELS[selectedModel] || "gpt-image-2";
+  const modelName = VALID_IMAGE_MODELS[selectedModel] || "gpt-image-1";
   const maxAttempts = 3;
 
   const PREFIX = "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person.";
