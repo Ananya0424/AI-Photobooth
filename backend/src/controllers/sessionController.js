@@ -296,12 +296,27 @@ const captureImage = async (req, res) => {
     const genStart = Date.now();
 
     try {
-      const generatedUrl = await generateFaceSwap(
+      // NOTE: generateFaceSwap resolves to an OBJECT — { imageUrl, enhancement } —
+      // not a plain URL string. Destructure it here rather than treating the
+      // whole return value as a string.
+      const faceSwapResult = await generateFaceSwap(
         rawImageUrl,
         targetTemplateUrl,
         finalPrompt,
         selectedModel
       );
+
+      const generatedUrl = faceSwapResult?.imageUrl;
+
+      // Debug logs to catch any future shape mismatches early
+      console.log("generatedUrl =", generatedUrl);
+      console.log("typeof generatedUrl =", typeof generatedUrl);
+
+      if (typeof generatedUrl !== "string" || !generatedUrl) {
+        throw new Error(
+          `generateFaceSwap returned an invalid imageUrl (got ${typeof generatedUrl}): ${JSON.stringify(faceSwapResult)}`
+        );
+      }
 
       // If the generated URL is different from source and not a data URI, upload to Cloudinary
       let finalUrl = generatedUrl;
