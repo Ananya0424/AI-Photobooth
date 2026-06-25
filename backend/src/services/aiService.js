@@ -257,10 +257,9 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
     if (modelName === "dall-e-3") {
       params.quality = "hd";
       params.style   = "natural";
-    } else if (modelName === "gpt-image-2") {
-      // gpt-image-2 requires explicit b64_json format
-      params.response_format = "b64_json";
     }
+    // NOTE: gpt-image-2 always returns b64_json automatically.
+    // Do NOT send response_format — it is not a valid parameter for this model.
 
     try {
       const response = await withTimeout(
