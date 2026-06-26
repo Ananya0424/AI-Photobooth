@@ -128,7 +128,7 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
   const lower = originalPrompt.toLowerCase();
 
   if (lower.includes("astronaut") || lower.includes("nasa") || lower.includes("space")) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing a highly detailed white space suit inside a spaceship, looking at the camera. Sharp focus, realistic lighting, studio quality.";
+    return "A high quality, 3D rendered cartoon avatar of a space explorer in a white suit. Friendly, simple, clean background.";
   }
   if (
     lower.includes("superhero") ||
@@ -137,7 +137,7 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
     lower.includes("marvel") ||
     lower.includes("iron")
   ) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing high-tech futuristic metallic red and gold body armor, looking at the camera. Sharp focus, realistic lighting, studio quality.";
+    return "A high quality, 3D rendered cartoon avatar of a generic hero character in shiny armor. Friendly, simple, clean background.";
   }
   if (
     lower.includes("king") ||
@@ -145,10 +145,10 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
     lower.includes("crown") ||
     lower.includes("tiara")
   ) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing an ornate golden crown and royal robes, looking at the camera. Regal palace background, sharp focus, realistic lighting, studio quality.";
+    return "A high quality, 3D rendered cartoon avatar of a royal person wearing a crown. Friendly, simple, clean background.";
   }
 
-  return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing formal business attire, looking at the camera. Office studio background, sharp focus, realistic lighting, studio quality.";
+  return "A high quality, 3D rendered cartoon avatar of a professional person smiling. Friendly, simple, clean background.";
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -269,7 +269,12 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
   let currentPrompt = prompt;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const fullPrompt = `${PREFIX} ${currentPrompt}. ${SUFFIX}`;
+    // Only append the strict photorealistic prefix/suffix on attempt 1.
+    // On fallback attempts, we want to use the exactly sanitized or ultra-safe prompt without adding anything that could re-trigger safety filters.
+    const fullPrompt = attempt === 1 
+      ? `${PREFIX} ${currentPrompt}. ${SUFFIX}`
+      : currentPrompt;
+
     console.log(`${label} Generating image — attempt ${attempt}/${maxAttempts} (model: ${modelName})`);
     console.log(`${label} Prompt: "${fullPrompt.substring(0, 120)}..."`);
 
