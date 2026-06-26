@@ -335,43 +335,11 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
           </div>
 
           {/* Action buttons */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr 1fr', gap: '12px', marginBottom: '20px', animation: 'rs-slide-up 0.6s ease-out 0.4s both' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px', animation: 'rs-slide-up 0.6s ease-out 0.4s both' }}>
             {/* Regenerate */}
             <button onClick={onRetake} className="rs-btn-sec">
               <div style={{ fontSize: '26px', lineHeight: 1 }}>🔄</div>
               <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>Regenerate</span>
-            </button>
-
-            {/* Share — Primary */}
-            <button
-              onClick={handleShare}
-              disabled={shareStatus === 'sending'}
-              className="rs-btn-share"
-              style={{
-                background: shareStatus === 'sent'
-                  ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                  : shareStatus === 'error'
-                  ? 'linear-gradient(135deg, #ef4444, #dc2626)'
-                  : 'linear-gradient(135deg, #a855f7, #ec4899)',
-                boxShadow: shareStatus === 'sent'
-                  ? '0 12px 30px rgba(34,197,94,0.4)'
-                  : shareStatus === 'error'
-                  ? '0 12px 30px rgba(239,68,68,0.4)'
-                  : '0 12px 30px rgba(168,85,247,0.4)',
-                opacity: shareStatus === 'sending' ? 0.85 : 1,
-              }}
-            >
-              <div style={{ fontSize: '28px', lineHeight: 1 }}>
-                {shareStatus === 'sending' ? (
-                  <svg className="rs-spin" style={{ width: '28px', height: '28px', color: '#fff' }} viewBox="0 0 24 24">
-                    <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" />
-                    <path style={{ opacity: 0.85 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                  </svg>
-                ) : shareStatus === 'sent' ? '✅' : shareStatus === 'error' ? '❌' : '📧'}
-              </div>
-              <span style={{ color: '#fff', fontSize: '13px', fontWeight: '700' }}>
-                {shareStatus === 'sending' ? 'Sending...' : shareStatus === 'sent' ? 'Sent! ✓' : shareStatus === 'error' ? 'Failed ✗' : 'Share'}
-              </span>
             </button>
 
             {/* QR Code */}
@@ -380,21 +348,6 @@ function ResultScreen({ generatedImageUrl, capturedImage, onRetake, onRestart, o
               <span style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>QR Code</span>
             </button>
           </div>
-
-          {/* Share toast message */}
-          {shareMessage && (
-            <div style={{ textAlign: 'center', marginBottom: '16px', animation: 'rs-slide-up 0.4s ease-out' }}>
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                padding: '10px 20px', borderRadius: '12px', fontSize: '14px', fontWeight: '600',
-                background: shareStatus === 'sent' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)',
-                border: `1px solid ${shareStatus === 'sent' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                color: shareStatus === 'sent' ? '#4ade80' : '#f87171',
-              }}>
-                {shareMessage}
-              </div>
-            </div>
-          )}
 
           {/* Back to home */}
           <div style={{ textAlign: 'center', animation: 'rs-fade-in 0.6s ease-out 0.6s both' }}>
