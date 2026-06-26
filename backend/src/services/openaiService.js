@@ -59,24 +59,22 @@ const enhancePrompt = async (modelId, basePrompt, userName, gender) => {
 
     const openai = new OpenAI({ apiKey });
 
+    const systemPrompt = `You are an expert prompt engineer for DALL-E 3.
+    You will receive a base style description.
+    Your job is to rewrite the prompt to be highly detailed, cinematic, and optimized for an AI image generator.
+    Do NOT include any specific names or real people in the prompt, as this triggers safety filters.
+    Make it highly descriptive, focusing on lighting, textures, and composition. Keep it under 100 words.`;
+
     const completion = await openai.chat.completions.create({
       model: chatModel,
       messages: [
         {
           role:    "system",
-          content:
-            "You are an expert prompt engineer for photorealistic AI portrait generation. " +
-            "Your task is to take a base style prompt and enhance it into a highly detailed, " +
-            "ultra-photorealistic portrait description. Focus on: sharp facial features, detailed " +
-            "skin textures, realistic eye reflections, high-end studio lighting, cinematic color " +
-            "grading, 8K resolution quality, DSLR-like depth of field, and professional photography " +
-            "aesthetics. Keep the output concise (under 100 words) and return ONLY the final prompt " +
-            "without any extra conversation or quotes. Always emphasize: ultra sharp focus, " +
-            "hyper-detailed, photorealistic, professional studio photography.",
+          content: systemPrompt,
         },
         {
           role:    "user",
-          content: `User Name: ${userName}, Gender: ${gender}, Base Style Prompt: ${basePrompt}`,
+          content: `Gender: ${gender}, Base Style Prompt: ${basePrompt}`,
         },
       ],
       max_tokens:  200,

@@ -1,6 +1,6 @@
 const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-const { sendPortraitEmail } = require('../src/services/nodemailerService');
+const { sendPortraitEmail } = require('../src/services/brevoEmailService');
 
 const recipient = "ananyashar24@gmail.com";
 const name = "TestUser";
