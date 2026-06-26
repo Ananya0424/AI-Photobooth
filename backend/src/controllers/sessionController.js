@@ -7,7 +7,7 @@ const { generateFaceSwap, isMockMode } = require("../services/aiService");
 const { generateQRCode } = require("../utils/qrCodeGenerator");
 const { getTemplatesByGender, getTemplateById } = require("../utils/stylePrompts");
 const { enhancePrompt } = require("../services/openaiService");
-const { sendPortraitEmail } = require("../services/nodemailerService");
+const { sendPortraitEmail } = require("../services/brevoEmailService");
 
 /**
  * Create a new photobooth session

@@ -77,13 +77,13 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
 
-    // Verify Nodemailer email service
-    const { checkEmailHealth } = require("./services/nodemailerService");
+    // Verify Brevo email service
+    const { checkEmailHealth } = require("./services/brevoEmailService");
     const emailHealth = await checkEmailHealth();
     if (emailHealth.configured) {
-      console.log(`[Email Service] Nodemailer configured — ${emailHealth.message}`);
+      console.log(`[Email Service] ${emailHealth.message}`);
     } else {
-      console.warn("[Email Service] Email credentials not set (EMAIL_USER / EMAIL_PASS missing).");
+      console.warn("[Email Service] Email credentials not set (BREVO_API_KEY missing).");
     }
 
     app.listen(PORT, () => {
