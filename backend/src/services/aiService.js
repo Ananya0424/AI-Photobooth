@@ -128,7 +128,7 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
   const lower = originalPrompt.toLowerCase();
 
   if (lower.includes("astronaut") || lower.includes("nasa") || lower.includes("space")) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing a highly detailed white space suit inside a spaceship, looking at the camera. Sharp focus, realistic lighting, studio quality.";
+    return "A hyper-realistic, ultra high-quality, 8K cinematic digital render of a fictional character wearing a highly detailed white space suit inside a spaceship, looking at the camera. Sharp focus, realistic lighting, masterpiece digital art.";
   }
   if (
     lower.includes("superhero") ||
@@ -137,7 +137,7 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
     lower.includes("marvel") ||
     lower.includes("iron")
   ) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing high-tech futuristic metallic red and gold body armor, looking at the camera. Sharp focus, realistic lighting, studio quality.";
+    return "A hyper-realistic, ultra high-quality, 8K cinematic digital render of a fictional character wearing high-tech futuristic metallic red and gold body armor, looking at the camera. Sharp focus, realistic lighting, masterpiece digital art.";
   }
   if (
     lower.includes("king") ||
@@ -145,10 +145,10 @@ const getSuperSafeFallbackPrompt = (originalPrompt = "") => {
     lower.includes("crown") ||
     lower.includes("tiara")
   ) {
-    return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing an ornate golden crown and royal robes, looking at the camera. Regal palace background, sharp focus, realistic lighting, studio quality.";
+    return "A hyper-realistic, ultra high-quality, 8K cinematic digital render of a fictional character wearing an ornate golden crown and royal robes, looking at the camera. Regal palace background, sharp focus, realistic lighting, masterpiece digital art.";
   }
 
-  return "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person wearing formal business attire, looking at the camera. Office studio background, sharp focus, realistic lighting, studio quality.";
+  return "A hyper-realistic, ultra high-quality, 8K cinematic digital render of a fictional character wearing formal business attire, looking at the camera. Office studio background, sharp focus, realistic lighting, masterpiece digital art.";
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -263,13 +263,13 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
   const modelName = VALID_IMAGE_MODELS[selectedModel] || "gpt-image-1";
   const maxAttempts = 3;
 
-  const PREFIX = "A photorealistic, ultra high-quality, 8K professional portrait photograph of a person.";
-  const SUFFIX  = "The person is facing slightly forward with sharp focus on the face. Ultra-detailed skin texture, sharp eyes, realistic lighting. Studio quality photography. Do not add any text or watermarks.";
+  const PREFIX = "A hyper-realistic, ultra high-quality, 8K cinematic digital render of a fictional character.";
+  const SUFFIX  = "The character is facing slightly forward with sharp focus on the face. Ultra-detailed textures, sharp eyes, realistic cinematic lighting. Masterpiece digital art. Do not add any text or watermarks.";
 
   let currentPrompt = prompt;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    // Only append the strict photorealistic prefix/suffix on attempt 1.
+    // Only append the strict prefix/suffix on attempt 1.
     // On fallback attempts, we want to use the exactly sanitized or ultra-safe prompt without adding anything that could re-trigger safety filters.
     const fullPrompt = attempt === 1 
       ? `${PREFIX} ${currentPrompt}. ${SUFFIX}`
