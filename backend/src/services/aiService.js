@@ -526,14 +526,15 @@ const generateFaceSwap = async (
     console.warn(`${label} Step 2b (Cloudinary) failed — proceeding with raw Gradio URL: ${cdnErr.message}`);
   }
 
-  // ── Step 3: Enhance (non-fatal — never blocks the user) ───────────────────
-  console.log(`${label} STEP 3: Enhancing image (CodeFormer/GFPGAN)...`);
-  const enhanceStart = Date.now();
-
-  // enhanceImage never throws — always returns a result with fallback
-  const enhancementResult = await enhanceImage(stableFaceSwapUrl);
-  console.log(`${label} Step 3 complete in ${Date.now() - enhanceStart}ms`);
-  console.log(`${label} Enhancement: method=${enhancementResult.method}, success=${enhancementResult.success}`);
+  // ── Step 3: Enhance (SKIPPED TO REDUCE GENERATION TIME) ───────────────────
+  console.log(`${label} STEP 3: Enhancing image skipped to reduce generation time...`);
+  const enhancementResult = {
+    url: stableFaceSwapUrl,
+    method: 'skipped',
+    success: true,
+    timeMs: 0,
+  };
+  console.log(`${label} Enhancement: skipped for speed`);
 
   // ── Step 4: Force final output to EXACTLY 512x512 ─────────────────────────
   // Re-upload through Cloudinary with an exact-size transformation. This is

@@ -77,13 +77,13 @@ const startServer = async () => {
     // Connect to MongoDB
     await connectDB();
 
-    // Verify Resend email service
-    const { checkResendHealth } = require("./services/resendemailservice");
-    const emailHealth = await checkResendHealth();
+    // Verify Nodemailer email service
+    const { checkEmailHealth } = require("./services/nodemailerService");
+    const emailHealth = await checkEmailHealth();
     if (emailHealth.configured) {
-      console.log(`[Email Service] Resend configured — ${emailHealth.message}`);
+      console.log(`[Email Service] Nodemailer configured — ${emailHealth.message}`);
     } else {
-      console.warn("[Email Service] Resend API key not set (RESEND_API_KEY missing).");
+      console.warn("[Email Service] Email credentials not set (EMAIL_USER / EMAIL_PASS missing).");
     }
 
     app.listen(PORT, () => {
