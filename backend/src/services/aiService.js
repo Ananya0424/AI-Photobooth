@@ -64,13 +64,13 @@ const GRADIO_PREDICT_TIMEOUT_MS = parseInt(
 
 const OPENAI_TIMEOUT_MS = 300_000; // 5 min for image generation
 
-// Map fake/futuristic model IDs to real OpenAI image model IDs
+// Map UI model IDs exactly as they are so the proxy provider accepts them
 const VALID_IMAGE_MODELS = {
-  "gpt-image-2": "dall-e-3",
-  "gpt-image-2-2026-04-21":  "dall-e-3",  
-  "gpt-image-1.5":           "dall-e-3",  
-  "dall-e-3":                "dall-e-3",
-  "dall-e-2":                "dall-e-2",
+  "gpt-image-2": "gpt-image-2",
+  "gpt-image-2-2026-04-21": "gpt-image-2-2026-04-21",  
+  "gpt-image-1.5": "gpt-image-1.5",  
+  "dall-e-3": "dall-e-3",
+  "dall-e-2": "dall-e-2",
 };
 
 console.log(
@@ -290,11 +290,7 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
     };
 
     if (modelName.startsWith("gpt-image")) {
-      params.size    = "1024x1024"; // generate at a real resolution; we downscale to 512x512 later in Cloudinary for crisper results than generating natively small
-      // [Performance Test] quality temporarily set to "low" for benchmarking —
-      // was "high". Resolution (size) and n are UNCHANGED. Revert to "high"
-      // once the benchmark run is complete.
-      params.quality = "low";      // low | medium | high — benchmark test value
+      params.size    = "1024x1024"; 
     } else if (modelName === "dall-e-3") {
       params.size    = "1024x1024";
       params.quality = "hd";
