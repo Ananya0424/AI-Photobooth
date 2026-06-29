@@ -298,7 +298,6 @@ const generateBaseImage = async (prompt, selectedModel, sessionId = "unknown") =
     } else if (modelName === "dall-e-3") {
       params.size    = "1024x1024";
       params.quality = "hd";
-      params.style   = "natural";
     } else if (modelName === "dall-e-2") {
       params.size = "1024x1024";
     }
