@@ -66,9 +66,9 @@ const OPENAI_TIMEOUT_MS = 300_000; // 5 min for image generation
 
 // Map fake/futuristic model IDs to real OpenAI image model IDs
 const VALID_IMAGE_MODELS = {
-  "gpt-image-2": "gpt-image-1",
-  "gpt-image-2-2026-04-21":  "gpt-image-2",  // fake ID → real
-  "gpt-image-1.5":           "gpt-image-2",  // fake ID → real
+  "gpt-image-2": "dall-e-3",
+  "gpt-image-2-2026-04-21":  "dall-e-3",  
+  "gpt-image-1.5":           "dall-e-3",  
   "dall-e-3":                "dall-e-3",
   "dall-e-2":                "dall-e-2",
 };
